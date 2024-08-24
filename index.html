@@ -1,0 +1,619 @@
+<html>
+
+<head>
+  <base href="https://websim.ai//@idotop/best-restaurants-in-montenegro-sty%20implement%20the%20code%20from%20this%20to%20the%20resturants%20recomendation%20tab%20make%20it%20work%20like%20it%20work%20it%20that%20website">
+  <!DOCTYPE html>
+  <html lang="he" dir="rtl">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>מסע למונטנגרו - מפת טיול</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <style>
+      body,
+      html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: 'Heebo', sans-serif;
+        background-color: #f0f4f8;
+      }
+
+      #container {
+        display: flex;
+        height: 100%;
+        flex-direction: Right;  //row-reverse
+      }
+
+      #sidebar {
+        width: 400px;
+        padding: 20px;
+        overflow-y: auto;
+        background-color: #222222;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+      }
+
+      #map {
+        flex-grow: 1;
+      }
+
+      h2 {
+        color: #3498db;
+        margin-bottom: 20px;
+      }
+
+      .day-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .day-button {
+        flex: 1 0 calc(25% - 10px);
+        padding: 10px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 5px;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .day-button:hover {
+        background-color: #2980b9;
+        transform: translateY(-4px);
+      }
+
+      .day-button.active {
+        background-color: #2c3e50;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-card {
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-card h3 {
+        color: #3498db;
+        margin-top: 0;
+      }
+
+      .info-card ul {
+        padding-right: 20px;
+        margin-bottom: 0;
+      }
+
+      .info-card li {
+        margin-bottom: 10px;
+      }
+
+      .weather-info {
+        background-color: #ecf0f1;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+
+      .weather-info h3 {
+        color: #3498db;
+        cursor: pointer;
+        transition: color 0.3s ease;
+      }
+
+      .weather-info h3:hover {
+        color: #2980b9;
+        text-decoration: underline;
+      }
+
+      .icon-text {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        color: #34495e;
+      }
+
+      .icon-text i {
+        margin-left: 10px;
+        width: 20px;
+        color: #3498db;
+      }
+
+      .restaurant-link {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      .restaurant-link:hover {
+        color: #2980b9;
+        text-decoration: underline;
+      }
+
+      .restaurant-card {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .restaurant-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .restaurant-name {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+      }
+
+      .restaurant-details {
+        font-size: 0.9em;
+        color: #7f8c8d;
+      }
+
+      .restaurant-rating {
+        color: #f39c12;
+        font-weight: bold;
+      }
+
+      .restaurant-hours {
+        font-size: 0.85em;
+        color: #34495e;
+        margin-top: 5px;
+      }
+
+      .edit-button {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+
+      .edit-button:hover {
+        background-color: #27ae60;
+      }
+
+      .edit-area {
+        width: 100%;
+        min-height: 100px;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #bdc3c7;
+        border-radius: 5px;
+        font-family: 'Heebo', sans-serif;
+        font-size: 14px;
+      }
+
+      @media (max-width: 768px) {
+        #container {
+          flex-direction: column;
+        }
+
+        #sidebar {
+          width: 100%;
+          max-height: 50%;
+        }
+
+        .day-button {
+          flex: 1 0 calc(33.33% - 10px);
+        }
+      }
+    </style>
+  </head>
+
+<body>
+  <div id="container">
+    <div id="sidebar">
+      <h2> מפת טיול למונטנגרו</h2>
+      <div class="day-buttons" id="dayButtons"></div>
+      <div class="info-card" id="activities"></div>
+      <div class="info-card" id="restaurants"></div>
+      <div class="weather-info" id="weatherInfo"></div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    const tripData = [{
+        date: '24/9',
+        day: 1,
+        activities: ['נחיתה ונסיעה למלון בעיר קוטור', 'נסיעה לרכבל + מגלשת הרים + תצפית על קוטור', 'לינה בקוטור'],
+        location: [42.4246, 18.7712],
+        restaurants: [{
+            name: 'Galion',
+            cuisine: 'Seafood',
+            rating: 4.5,
+            priceRange: '€€€',
+            address: 'Suranj bb, Kotor 85330 Montenegro',
+            description: 'Upscale dining with panoramic views of the Bay of Kotor.'
+          },
+          {
+            name: 'Konoba Scala Santa',
+            cuisine: 'Mediterranean',
+            rating: 4.7,
+            priceRange: '€€-€€€',
+            address: 'Trg od Salate bb, Kotor 85330 Montenegro',
+            description: 'Charming tavern offering local specialties in a historic setting.'
+          },
+          {
+            name: 'Bastion',
+            cuisine: 'Mediterranean',
+            rating: 4.6,
+            priceRange: '€€-€€€',
+            address: 'Stari Grad 517, Kotor 85330 Montenegro',
+            description: 'Elegant restaurant within the old city walls, featuring Mediterranean and Balkan cuisine.'
+          }
+        ]
+      },
+      {
+        date: '25/9',
+        day: 2,
+        activities: ['אטרקציית המערה הכחולה (3 שעות כולל כניסה)', 'סיור בקוטור', 'אפשרות לקניות/נסיעה לגורז׳דה', 'לינה בקוטור'],
+        location: [42.4246, 18.7712],
+        restaurants: [{
+            name: 'Tanjga',
+            cuisine: 'Barbecue',
+            rating: 4.8,
+            priceRange: '€',
+            address: 'Dobrota bb, Kotor 85330 Montenegro',
+            description: 'Popular spot for grilled meats and traditional Montenegrin dishes.'
+          },
+          {
+            name: 'Astoria',
+            cuisine: 'Mediterranean',
+            rating: 4.5,
+            priceRange: '€€-€€€',
+            address: 'Stari Grad 322, Kotor 85330 Montenegro',
+            description: 'Elegant restaurant offering a mix of international and Montenegrin cuisine.'
+          },
+          {
+            name: 'Cesarica',
+            cuisine: 'Seafood',
+            rating: 4.6,
+            priceRange: '€€-€€€',
+            address: 'Stari Grad, Kotor 85330 Montenegro',
+            description: 'Seafood restaurant with a cozy atmosphere and locally-sourced ingredients.'
+          }
+        ]
+      },
+      {
+        date: '26/9',
+        day: 3,
+        activities: ['נסיעה לכיוון בודווה', 'עצירה בחוף פלוצ׳ה עם הבריכות על הים', 'ארוחת צהריים בחוף יאז (קרוב ובדרך) ונסיעה לבודווה', 'לינה בבודווה'],
+        location: [42.2911, 18.8401],
+        restaurants: [{
+            name: 'Jadran',
+            cuisine: 'Seafood',
+            rating: 4.4,
+            priceRange: '€€-€€€',
+            address: 'Slovenska Obala, Budva 85310 Montenegro',
+            description: 'Beachfront restaurant offering fresh seafood and panoramic views of the Adriatic.'
+          },
+          {
+            name: 'Demižana',
+            cuisine: 'Mediterranean',
+            rating: 4.5,
+            priceRange: '€€-€€€',
+            address: 'Slovenska Obala bb, Budva 85310 Montenegro',
+            description: 'Seafood specialist with a romantic atmosphere and stunning sea views.'
+          },
+          {
+            name: 'Porto',
+            cuisine: 'Mediterranean',
+            rating: 4.3,
+            priceRange: '€€-€€€',
+            address: 'Slovenska plaza bb, Budva 85310 Montenegro',
+            description: 'Upscale dining with a focus on Mediterranean cuisine and an extensive wine list.'
+          }
+        ]
+      },
+      {
+        date: '27/9',
+        day: 4,
+        activities: ['סיור בעיר בודווה + העיר העתיקה', 'חוף מוגרן + שייט לחוף סווטי ניקולה', 'המשך סיור בעיר וערב רגוע', 'לינה בבודווה'],
+        location: [42.2911, 18.8401],
+        restaurants: [{
+            name: 'Konoba Stari Grad',
+            cuisine: 'Mediterranean',
+            rating: 4.6,
+            priceRange: '€€-€€€',
+            address: 'Njegoseva 152, Budva 85310 Montenegro',
+            description: 'Traditional Montenegrin cuisine with a modern twist, located in the heart of Old Town.'
+          },
+          {
+            name: 'Astoria',
+            cuisine: 'Mediterranean',
+            rating: 4.5,
+            priceRange: '€€€€',
+            address: 'Topliski Put bb, Budva 85310 Montenegro',
+            description: 'Fine dining experience with international cuisine and a sophisticated ambiance.'
+          },
+          {
+            name: 'Bokun',
+            cuisine: 'Mediterranean',
+            rating: 4.4,
+            priceRange: '€€-€€€',
+            address: 'Cara Dusana bb, Budva 85310 Montenegro',
+            description: 'Cozy tavern serving traditional Montenegrin dishes and local wines.'
+          }
+        ]
+      },
+      {
+        date: '28/9',
+        day: 5,
+        activities: ['נסיעה לחוף סווטי סטפן עם הבתים על הסלעים', 'ארוחת צהריים מוקדמת בעיירה בצ׳יצ׳י + החופים שלה', 'נסיעה למנזר אוסטרוג ומשם לז׳אבליאק', 'לינה בז׳אבליאק'],
+        location: [43.1547, 19.1228],
+        restaurants: [{
+            name: 'Sučelica',
+            cuisine: 'Local',
+            rating: 4.4,
+            priceRange: '€€',
+            address: 'Sucelica, Zabljak 84220 Montenegro',
+            description: 'Mountain lodge restaurant offering hearty meals with a view of Durmitor National Park.'
+          },
+          {
+            name: 'Momcilov Grad',
+            cuisine: 'Local',
+            rating: 4.3,
+            priceRange: '€€',
+            address: 'Durmitor National Park, Zabljak 84220 Montenegro',
+            description: 'Traditional restaurant known for its local specialties and cozy fireplace.'
+          },
+          {
+            name: 'Zlatiborska Noc',
+            cuisine: 'Serbian',
+            rating: 4.5,
+            priceRange: '€€',
+            address: 'Zabljak, Montenegro',
+            description: 'Rustic tavern serving authentic mountain cuisine and homemade rakija.'
+          }
+        ]
+      },
+      {
+        date: '29/9',
+        day: 6,
+        activities: ['נסיעה לגשר טארה + אומגות', 'האגם השחור + מסלול', 'נסיעה דרך הכביש היפה והמבודד P14', 'לינה בפלוז׳ינה'],
+        location: [43.1519, 18.8425],
+        restaurants: [{
+            name: 'Konoba Piva',
+            cuisine: 'Local',
+            rating: 4.4,
+            priceRange: '€€',
+            address: 'Pluzine, Montenegro',
+            description: 'Lakeside restaurant offering spectacular views of Piva Lake and traditional Montenegrin dishes.'
+          },
+          {
+            name: 'Restoran Jezero',
+            cuisine: 'Local',
+            rating: 4.2,
+            priceRange: '€€',
+            address: 'Pluzine, Montenegro',
+            description: 'Scenic restaurant with terrace seating overlooking Piva Lake, specializing in fresh fish.'
+          },
+          {
+            name: 'Konak Moravka',
+            cuisine: 'Local',
+            rating: 4.3,
+            priceRange: '€€',
+            address: 'Pluzine, Montenegro',
+            description: 'Family-run tavern known for its homemade cheese, prosciutto, and organic produce from nearby farms.'
+          }
+        ]
+      },
+      {
+        date: '30/9',
+        day: 7,
+        activities: ['טיול לרפטינג בפיבה', 'נסיעה חזרה ללינה באזור שדה התעופה', 'לינה בטיבאט'],
+        location: [42.4047, 18.7328],
+        restaurants: [{
+            name: 'One',
+            cuisine: 'International',
+            rating: 4.5,
+            priceRange: '€€€€',
+            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+            description: 'Upscale restaurant in Porto Montenegro, featuring international cuisine and a stylish atmosphere.'
+          },
+          {
+            name: 'Prova',
+            cuisine: 'Mediterranean',
+            rating: 4.4,
+            priceRange: '€€-€€€',
+            address: 'Obala Iva Novakovica, Tivat 85320 Montenegro',
+            description: 'Seafront restaurant offering a mix of Mediterranean and local specialties with beautiful bay views.'
+          },
+          {
+            name: 'Murano',
+            cuisine: 'Mediterranean',
+            rating: 4.3,
+            priceRange: '€€-€€€',
+            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+            description: 'Elegant dining experience in Porto Montenegro, known for its creative cuisine and cocktails.'
+          }
+        ]
+      },
+      {
+        date: '1/10',
+        day: 8,
+        activities: ['נסיעה לשדה התעופה', 'טיסה חזרה לישראל'],
+        location: [42.4047, 18.7328],
+        restaurants: [{
+            name: 'Byblos',
+            cuisine: 'Lebanese',
+            rating: 4.4,
+            priceRange: '€€-€€€',
+            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+            description: 'Authentic Lebanese cuisine in a luxurious setting within Porto Montenegro.'
+          },
+          {
+            name: 'Pine',
+            cuisine: 'International',
+            rating: 4.3,
+            priceRange: '€€€€',
+            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+            description: 'Sophisticated restaurant offering international cuisine with a focus on locally sourced ingredients.'
+          },
+          {
+            name: 'Big Ben',
+            cuisine: 'British',
+            rating: 4.2,
+            priceRange: '€€-€€€',
+            address: 'Kalimanj bb, Tivat 85320 Montenegro',
+            description: 'British-style pub serving comfort food and a wide selection of beers in a casual atmosphere.'
+          }
+        ]
+      }
+    ];
+    let map = L.map('map').setView([42.7087, 19.3744], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    let currentMarker = null;
+    let currentPolyline = null;
+    let markers = [];
+    let currentDay = null;
+
+    function createDayButtons() {
+      const dayButtons = document.getElementById('dayButtons');
+      tripData.forEach(day => {
+        const button = document.createElement('button');
+        button.className = 'day-button';
+        button.textContent = `יום ${day.day} (${day.date})`;
+        button.onclick = () => showDay(day);
+        dayButtons.appendChild(button);
+      });
+    }
+
+    function showDay(day) {
+      currentDay = day;
+      document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`.day-button:nth-child(${day.day})`).classList.add('active');
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+      }
+      if (currentPolyline) {
+        map.removeLayer(currentPolyline);
+      }
+      currentMarker = L.marker(day.location).addTo(map);
+      map.setView(day.location, 15);
+      if (day.day > 1) {
+        const previousDay = tripData[day.day - 2];
+        currentPolyline = L.polyline([previousDay.location, day.location], {
+          color: '#3628db',
+          weight: 5,
+          opacity: 0.7
+        }).addTo(map);
+      }
+      const activitiesDiv = document.getElementById('activities');
+      activitiesDiv.innerHTML = `
+                <h3>יום ${day.day} (${day.date}):</h3>
+                <ul id="activitiesList">
+                    ${day.activities.map(activity => `<li>${activity}</li>`).join('')}
+                </ul>
+                <button class="edit-button" onclick="editActivities()">ערוך פעילויות</button>
+            `;
+      const restaurantsDiv = document.getElementById('restaurants');
+      restaurantsDiv.innerHTML = `<h3>מסעדות מומלצות:</h3>` +
+        day.restaurants.map(restaurant => `
+                    <div class="restaurant-card" onclick="openInGoogleMaps('${restaurant.name}, ${restaurant.address}')">
+                        <div class="restaurant-name">${restaurant.name}</div>
+                        <div class="restaurant-details">
+                            <span class="restaurant-cuisine">${restaurant.cuisine}</span> | 
+                            <span class="restaurant-rating">★ ${restaurant.rating}</span> | 
+                            <span class="restaurant-price">${restaurant.priceRange}</span>
+                        </div>
+                        <div class="restaurant-description">${restaurant.description}</div>
+                    </div>
+                `).join('');
+      const weatherInfo = document.getElementById('weatherInfo');
+      const randomTemp = Math.floor(Math.random() * 10) + 20;
+      const randomHumidity = Math.floor(Math.random() * 30) + 50;
+      weatherInfo.innerHTML = `
+                <h3 onclick="openWeatherWebsite('${day.date}')">תחזית מזג האוויר ל-${day.date}</h3>
+                <div class="icon-text"><i class="fas fa-thermometer-half"></i> טמפרטורה: ${randomTemp}°C</div>
+                <div class="icon-text"><i class="fas fa-tint"></i> לחות: ${randomHumidity}%</div>
+                <div class="icon-text"><i class="fas fa-sun"></i> ברובו שמשי</div>
+            `;
+    }
+
+    function editActivities() {
+      const activitiesDiv = document.getElementById('activities');
+      const currentActivities = currentDay.activities.join('\n');
+      activitiesDiv.innerHTML = `
+                <h3>ערוך פעילויות ליום ${currentDay.day} (${currentDay.date}):</h3>
+                <textarea id="editActivitiesArea" class="edit-area">${currentActivities}</textarea>
+                <button class="edit-button" onclick="saveActivities()">שמור פעילויות</button>
+            `;
+    }
+
+    function saveActivities() {
+      const editedActivities = document.getElementById('editActivitiesArea').value.split('\n').filter(activity => activity.trim() !== '');
+      currentDay.activities = editedActivities;
+      showDay(currentDay);
+    }
+
+    function initMap() {
+      tripData.forEach((day, index) => {
+        const marker = L.marker(day.location, {
+          icon: L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background-color: #3498db; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          })
+        }).addTo(map);
+        marker.bindPopup(`<b>יום ${day.day}: ${day.date}</b><br>${day.activities[0]}`);
+        markers.push(marker);
+        if (index > 0) {
+          const previousDay = tripData[index - 1];
+          L.polyline([previousDay.location, day.location], {
+            color: '#3498db',
+            weight: 4,
+            opacity: 0.7
+          }).addTo(map);
+        }
+      });
+    }
+
+    function openInGoogleMaps(query) {
+      const baseUrl = 'https://www.google.com/maps/search/?api=1&query=';
+      const encodedQuery = encodeURIComponent(query);
+      const fullUrl = baseUrl + encodedQuery;
+      window.open(fullUrl, '_blank');
+    }
+
+    function openWeatherWebsite(date) {
+      // Convert date to format expected by weather website (if needed)
+      const formattedDate = date.split('/').reverse().join('-'); // Assuming weather site uses YYYY-MM-DD
+      const weatherUrl = `https://www.accuweather.com`;
+      window.open(weatherUrl, '_blank');
+    }
+    createDayButtons();
+    initMap();
+    showDay(tripData[0]); // Show first day by default
+  </script>
+</body>
+
+</html>
+</head>
+
+</html>
