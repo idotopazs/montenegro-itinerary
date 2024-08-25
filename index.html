@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 
   <!-- Leaflet Routing Machine CSS -->
- 
 
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
@@ -23,8 +22,6 @@
   <script src="https://unpkg.com/esri-leaflet@3.0.9/dist/esri-leaflet.js"></script>
 
   <!-- Leaflet Routing Machine JavaScript -->
-
-
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -368,39 +365,50 @@
     let map, currentDay, currentMarker, currentRoute, markers = [],
       routeControls = [],
       isRemovingLocations = false;
-    
     const openRouteServiceApiKey = '5b3ce3597851110001cf6248c50123909d9a458db7d4a37dcdc1c22b'; // Make sure this is correct
-
     let routeCache = {};
 
     function loadFromFirebase() {
-      database.ref('tripData').once('value')
-        .then((snapshot) => {
-          console.log("Firebase snapshot:", snapshot.val());
-          if (snapshot.exists()) {
-            tripData = snapshot.val();
+      Promise.all([
+          database.ref('tripData').once('value'),
+          database.ref('routeCache').once('value')
+        ])
+        .then(([tripDataSnapshot, routeCacheSnapshot]) => {
+          console.log("Firebase snapshot:", tripDataSnapshot.val());
+          if (tripDataSnapshot.exists()) {
+            tripData = tripDataSnapshot.val();
             if (!Array.isArray(tripData) || tripData.length === 0) {
               console.error("Invalid data structure in Firebase:", tripData);
               throw new Error("Invalid data structure in Firebase");
             }
           } else {
-            console.log("No data in Firebase, initializing with default data");
+            console.log("No trip data in Firebase, initializing with default data");
             tripData = getDefaultTripData();
-            saveToFirebase();
+          }
+          if (routeCacheSnapshot.exists()) {
+            routeCache = routeCacheSnapshot.val();
+            console.log("Route cache loaded from Firebase");
+          } else {
+            routeCache = {};
+            console.log("No route cache in Firebase, initializing empty cache");
           }
           initializeApp();
         })
         .catch((error) => {
           console.error("Detailed error loading data from Firebase:", error);
           tripData = getDefaultTripData();
+          routeCache = {};
           initializeApp();
         });
     }
 
     function saveToFirebase() {
-      database.ref('tripData').set(tripData)
+      Promise.all([
+          database.ref('tripData').set(tripData),
+          database.ref('routeCache').set(routeCache)
+        ])
         .then(() => {
-          console.log("Data saved successfully to Firebase");
+          console.log("Data and route cache saved successfully to Firebase");
         })
         .catch((error) => {
           console.error("Error saving data to Firebase:", error);
@@ -408,30 +416,27 @@
     }
 
     function initializeApp() {
-    console.log("Initializing app with tripData:", tripData);
-    if (Array.isArray(tripData) && tripData.length > 0 && tripData[0].day) {
+      console.log("Initializing app with tripData:", tripData);
+      if (Array.isArray(tripData) && tripData.length > 0 && tripData[0].day) {
         createDayButtons();
         initializeMap();
         showDay(tripData[0]);
-        
         // Fit the map to show all locations
-        const allLocations = tripData.flatMap(day => 
-            [day.location, ...(day.locations || []).map(loc => loc.coords)]
-        ).filter(loc => loc);
+        const allLocations = tripData.flatMap(day => [day.location, ...(day.locations || []).map(loc => loc.coords)]).filter(loc => loc);
         if (allLocations.length > 0) {
-            map.fitBounds(L.latLngBounds(allLocations));
+          map.fitBounds(L.latLngBounds(allLocations));
         }
-    } else {
+      } else {
         console.error("Invalid tripData structure:", tripData);
         tripData = getDefaultTripData();
         createDayButtons();
         initializeMap();
         showDay(tripData[0]);
+      }
     }
-}
 
     function initializeMap() {
-     map = L.map('map').setView([42.7087, 19.3744], 11);
+      map = L.map('map').setView([42.7087, 19.3744], 11);
       let currentMarker = null;
       let currentRoute = null;
       let markers = [];
@@ -474,128 +479,158 @@
     }
 
     function showDay(day) {
-    if (!day) {
+      if (!day) {
         console.error('Invalid day data:', day);
         return;
-    }
-    currentDay = day;
-    document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
-    const activeButton = document.querySelector(`.day-button:nth-child(${day.day})`);
-    if (activeButton) {
+      }
+      currentDay = day;
+      document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
+      const activeButton = document.querySelector(`.day-button:nth-child(${day.day})`);
+      if (activeButton) {
         activeButton.classList.add('active');
+      }
+      updateMap();
+      updateActivities();
+      updateRestaurants();
+      updateWeather();
+      updateLocationsList();
     }
-    updateMap();
-    updateActivities();
-    updateRestaurants();
-    updateWeather();
-    updateLocationsList();
-}
 
-  function updateMap() {
-    map.eachLayer(layer => {
+    function getRouteFromCache(waypoints) {
+      const cacheKey = waypoints.map(wp => wp.join(',')).join('|');
+      return routeCache[cacheKey];
+    }
+
+    function updateMap() {
+      map.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-            map.removeLayer(layer);
+          map.removeLayer(layer);
         }
-    });
-
-    tripData.forEach((day, index) => {
+      });
+      let routesToFetch = [];
+      tripData.forEach((day, index) => {
         const dayColor = `hsl(${(day.day * 360) / tripData.length}, 70%, 50%)`;
-        
         // Add marker for the day's origin
         if (day.location) {
-            L.marker(day.location, {
-                icon: L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
-                })
-            }).addTo(map).bindPopup(`Day ${day.day} Origin`);
+          L.marker(day.location, {
+            icon: L.divIcon({
+              className: 'custom-div-icon',
+              html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            })
+          }).addTo(map).bindPopup(`Day ${day.day} Origin`);
         }
-
         // Add markers for additional locations
         if (day.locations && Array.isArray(day.locations)) {
-            day.locations.forEach(loc => {
-                if (loc.coords) {
-                    L.marker(loc.coords, {
-                        icon: L.divIcon({
-                            className: 'custom-div-icon',
-                            html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-weight: bold;">•</div>`,
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
-                        })
-                    }).addTo(map).bindPopup(loc.name || 'Unnamed Location');
-                }
-            });
+          day.locations.forEach(loc => {
+            if (loc.coords) {
+              L.marker(loc.coords, {
+                icon: L.divIcon({
+                  className: 'custom-div-icon',
+                  html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-weight: bold;">•</div>`,
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10]
+                })
+              }).addTo(map).bindPopup(loc.name || 'Unnamed Location');
+            }
+          });
         }
-
         // Create route
         let waypoints = [];
         if (day.location) {
-            waypoints.push(day.location);
+          waypoints.push(day.location);
         }
         if (day.locations && Array.isArray(day.locations)) {
-            waypoints = waypoints.concat(day.locations.filter(loc => loc.coords).map(loc => loc.coords));
+          waypoints = waypoints.concat(day.locations.filter(loc => loc.coords).map(loc => loc.coords));
         }
         if (index < tripData.length - 1 && tripData[index + 1].location) {
-            waypoints.push(tripData[index + 1].location);
+          waypoints.push(tripData[index + 1].location);
         }
-
         if (waypoints.length > 1) {
-            const cacheKey = waypoints.map(wp => wp.join(',')).join('|');
-            if (routeCache[cacheKey]) {
-                drawRoute(routeCache[cacheKey], dayColor);
-            } else {
-                fetchRoute(waypoints, dayColor, cacheKey);
-            }
+          const cacheKey = waypoints.map(wp => wp.join(',')).join('|');
+          if (routeCache[cacheKey]) {
+            drawRoute(routeCache[cacheKey], dayColor);
+          } else {
+            routesToFetch.push({
+              waypoints,
+              dayColor,
+              cacheKey
+            });
+          }
         }
-    });
-
-    // Set view to the current day's location with a fixed zoom level
-    if (currentDay.location) {
-        map.setView(currentDay.location, 13); // Set a fixed zoom level (e.g., 9)
+      });
+      // Fetch routes that are not in cache
+      if (routesToFetch.length > 0) {
+        fetchRoutes(routesToFetch);
+      }
+      // Set view to the current day's location with a fixed zoom level
+      if (currentDay.location) {
+        map.setView(currentDay.location, 11);
+      }
     }
-}
-function fetchRoute(waypoints, color, cacheKey) {
-    const body = JSON.stringify({
-        coordinates: waypoints.map(wp => [wp[1], wp[0]])
-    });
 
-    fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-        method: 'POST',
-        headers: {
+    function fetchRoutes(routesToFetch) {
+      routesToFetch.forEach(route => {
+        fetchRoute(route.waypoints, route.dayColor, route.cacheKey);
+      });
+    }
+
+    function fetchRoute(waypoints, color, cacheKey) {
+      const body = JSON.stringify({
+        coordinates: waypoints.map(wp => [wp[1], wp[0]])
+      });
+      fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+          method: 'POST',
+          headers: {
             'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
             'Content-Type': 'application/json',
             'Authorization': openRouteServiceApiKey
-        },
-        body: body
-    })
-    .then(response => {
-        if (!response.ok) {
+          },
+          body: body
+        })
+        .then(response => {
+          if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.features && data.features.length > 0) {
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.features && data.features.length > 0) {
             const route = data.features[0].geometry.coordinates;
             routeCache[cacheKey] = route;
             drawRoute(route, color);
-        } else {
+            saveRouteCache();
+          } else {
             console.error('No route found in the response:', data);
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching route:', error);
-    });
-}
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching route:', error);
+        });
+    }
+
+    function saveRouteCache() {
+      database.ref('routeCache').set(routeCache)
+        .then(() => console.log("Route cache saved to Firebase"))
+        .catch(error => console.error("Error saving route cache to Firebase:", error));
+    }
+
     function drawRoute(route, color) {
-    L.polyline(route.map(coord => [coord[1], coord[0]]), {
+      L.polyline(route.map(coord => [coord[1], coord[0]]), {
         color: color,
         weight: 5,
         opacity: 0.7
-    }).addTo(map);
-}
+      }).addTo(map);
+    }
+
+    function clearRouteCache() {
+      routeCache = {};
+      database.ref('routeCache').remove()
+        .then(() => console.log("Route cache cleared from Firebase"))
+        .catch(error => console.error("Error clearing route cache from Firebase:", error));
+    }
+
     function updateActivities() {
       const activitiesDiv = document.getElementById('activities');
       activitiesDiv.innerHTML = `
@@ -636,36 +671,36 @@ function fetchRoute(waypoints, color, cacheKey) {
     }
 
     function updateLocationsList() {
-    const locationsList = document.getElementById('locationsList');
-    locationsList.innerHTML = '';
-    if (currentDay.locations && Array.isArray(currentDay.locations)) {
+      const locationsList = document.getElementById('locationsList');
+      locationsList.innerHTML = '';
+      if (currentDay.locations && Array.isArray(currentDay.locations)) {
         currentDay.locations.forEach((loc, index) => {
-            if (loc.coords) {
-                const li = document.createElement('li');
-                const a = document.createElement('a');
-                a.href = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
-                a.target = '_blank';
-                a.textContent = loc.name || 'Unnamed Location';
-                const coords = document.createElement('span');
-                coords.className = 'location-coordinates';
-                coords.textContent = `(${loc.coords[0].toFixed(4)}, ${loc.coords[1].toFixed(4)})`;
-                li.appendChild(a);
-                li.appendChild(coords);
-                if (isRemovingLocations) {
-                    const removeBtn = document.createElement('span');
-                    removeBtn.className = 'remove-location';
-                    removeBtn.textContent = ' ❌';
-                    removeBtn.onclick = () => removeLocation(index);
-                    li.appendChild(removeBtn);
-                }
-                locationsList.appendChild(li);
+          if (loc.coords) {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
+            a.target = '_blank';
+            a.textContent = loc.name || 'Unnamed Location';
+            const coords = document.createElement('span');
+            coords.className = 'location-coordinates';
+            coords.textContent = `(${loc.coords[0].toFixed(4)}, ${loc.coords[1].toFixed(4)})`;
+            li.appendChild(a);
+            li.appendChild(coords);
+            if (isRemovingLocations) {
+              const removeBtn = document.createElement('span');
+              removeBtn.className = 'remove-location';
+              removeBtn.textContent = ' ❌';
+              removeBtn.onclick = () => removeLocation(index);
+              li.appendChild(removeBtn);
             }
+            locationsList.appendChild(li);
+          }
         });
-    }
-    if (currentDay.location) {
+      }
+      if (currentDay.location) {
         document.getElementById('origin').value = `${currentDay.location[0].toFixed(4)}, ${currentDay.location[1].toFixed(4)}`;
+      }
     }
-}
 
     function editActivities() {
       const activitiesDiv = document.getElementById('activities');
@@ -696,25 +731,29 @@ function fetchRoute(waypoints, color, cacheKey) {
       const weatherUrl = `https://www.accuweather.com/en/me/podgorica/298465/daily-weather-forecast/${formattedDate}`;
       window.open(weatherUrl, '_blank');
     }
-    document.getElementById('addLocationBtn').addEventListener('click', function() {
-      map.once('click', function(e) {
-        const locationName = prompt("Enter location name:");
-        if (locationName) {
-          currentDay.locations.push({
-            name: locationName,
-            coords: [e.latlng.lat, e.latlng.lng]
-          });
-           routeCache = {};
-          updateMap();
-          updateLocationsList();
-          saveToFirebase();
+     document.getElementById('addLocationBtn').addEventListener('click', function() {
+    map.once('click', function(e) {
+      const locationName = prompt("Enter location name:");
+      if (locationName) {
+        if (!currentDay.locations) {
+          currentDay.locations = [];
         }
-      });
+        currentDay.locations.push({
+          name: locationName,
+          coords: [e.latlng.lat, e.latlng.lng]
+        });
+        clearRouteCache();
+        updateMap();
+        updateLocationsList();
+        saveToFirebase();
+      }
     });
+  });
+
     document.getElementById('editOriginBtn').addEventListener('click', function() {
       map.once('click', function(e) {
         currentDay.location = [e.latlng.lat, e.latlng.lng];
-        routeCache = {};
+        clearRouteCache();
         updateMap();
         updateLocationsList();
         saveToFirebase();
@@ -728,20 +767,21 @@ function fetchRoute(waypoints, color, cacheKey) {
 
     function removeLocation(index) {
       currentDay.locations.splice(index, 1);
-      routeCache = {};
+      clearRouteCache();
       updateMap();
       updateLocationsList();
       saveToFirebase();
     }
+
     function logTripData() {
-  database.ref('tripData').once('value')
-    .then((snapshot) => {
-      console.log(JSON.stringify(snapshot.val(), null, 2));
-    })
-    .catch((error) => {
-      console.error("Error fetching trip data:", error);
-    });
-}
+      database.ref('tripData').once('value')
+        .then((snapshot) => {
+          console.log(JSON.stringify(snapshot.val(), null, 2));
+        })
+        .catch((error) => {
+          console.error("Error fetching trip data:", error);
+        });
+    }
 
     function getDefaultTripData() {
       // Return your default trip data here
