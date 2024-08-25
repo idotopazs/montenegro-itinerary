@@ -5,12 +5,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Montenegro Trip Explorer</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  
+  <!-- Leaflet Routing Machine CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+  
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  
+  <!-- Esri Leaflet JavaScript -->
+  <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+  
+  <!-- Esri Leaflet Vector JavaScript -->
+  <script src="https://unpkg.com/esri-leaflet-vector@4.2.3/dist/esri-leaflet-vector.js" crossorigin=""></script>
+  
+  <!-- Leaflet Routing Machine JavaScript -->
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+
+  
 
   <style>
     body,
@@ -596,6 +616,9 @@
         locations: []
       }
     ];
+   
+    const accessToken = "AAPTxy8BH1VEsoebNVZXo8HurA0Z9eiKzK9QW3I7s7c9UGZi5MxyUpqcLe_anuJLWrH1GiES9-beSZzLqY1IjswpnZyH7fSJorjAt-1EThC74w1rrDLP6FyM0xYmO0Dm-YmvjFjmE4c8ZgUHjLY2nWCNQyckrVF5-saWe6HB-nLHHfczI-7js1Yki1muxDZF5J-U_Unu5QfT_2X8rFUGxE5auwCoUCHs_alh8Y5NSNyUnqo.AT1_YV1f7HDG";
+
     let map = L.map('map').setView([42.7087, 19.3744], 8);
     let currentMarker = null;
     let currentRoute = null;
@@ -603,21 +626,41 @@
     let currentDay = null;
     let routeControls = [];
     let isRemovingLocations = false;
-    // Define the base layers
+
+    // Define the base layers using Esri vector basemaps
+    var streets = L.esri.Vector.vectorBasemapLayer("arcgis/streets", {
+        token: accessToken
+    });
+
+    var satellite = L.esri.Vector.vectorBasemapLayer("arcgis/imagery", {
+        token: accessToken
+    });
+
+    var satelliteWithLabels = L.esri.Vector.vectorBasemapLayer("arcgis/imagery-labels", {
+        token: accessToken
+    });
+
+    // Add OpenStreetMap as a fallback
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: '© OpenStreetMap contributors'
     });
-    var esriWorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+
+    // Try to add the streets layer, fall back to OSM if it fails
+    streets.addTo(map).on('error', function() {
+        console.log("Error loading Esri basemap, falling back to OSM");
+        osm.addTo(map);
     });
-    // Add the OpenStreetMap layer to the map
-    osm.addTo(map);
+
     // Create a layer control
     var baseMaps = {
-      "OpenStreetMap": osm,
-      "Satellite": esriWorldImagery
+        "Streets": streets,
+        "Satellite": satellite,
+        "Satellite with Labels": satelliteWithLabels,
+        "OpenStreetMap": osm
     };
+
     L.control.layers(baseMaps).addTo(map);
+
 
     function createDayButtons() {
       const dayButtons = document.getElementById('dayButtons');
