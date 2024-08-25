@@ -3,29 +3,27 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Montenegro Trip Explorer</title>
-  
+
   <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
   <!-- Leaflet Routing Machine CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-  
+
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
-  
+
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  
+
   <!-- Leaflet JavaScript -->
- <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
-  
+
   <!-- Leaflet Routing Machine JavaScript -->
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-
-  
 
   <style>
     body,
@@ -59,9 +57,10 @@
       color: #2c3e50;
       margin-bottom: 20px;
     }
+
     .leaflet-routing-container {
-    display: none !important;
-}
+      display: none !important;
+    }
 
     .day-buttons {
       display: flex;
@@ -300,12 +299,14 @@
       }
 
       #sidebar {
-        width: 100%;
-        max-height: 50%;
+        width: auto;
+        background-color: #748D92;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        max-height: 40%;
       }
 
       .day-button {
-        flex: 1 0 calc(33.33% - 10px);
+        flex: 1 0 calc(30% - 10px);
       }
 
       .remove-location {
@@ -319,7 +320,6 @@
         color: #777;
         margin-left: 5px;
       }
-      
     }
   </style>
 </head>
@@ -615,40 +615,34 @@
         locations: []
       }
     ];
-   
     const map = L.map('map').setView([42.7087, 19.3744], 8);
-  let currentMarker = null;
-  let currentRoute = null;
-  let markers = [];
-  let currentDay = null;
-  let routeControls = [];
-  let isRemovingLocations = false;
-
-  // Define the base layers using Esri tile layers
-  const streets = L.esri.basemapLayer('Streets');
-  const satellite = L.esri.basemapLayer('Imagery');
-  const satelliteWithLabels = L.layerGroup([
-    L.esri.basemapLayer('Imagery'),
-    L.esri.basemapLayer('ImageryLabels')
-  ]);
-
-  // Add OpenStreetMap as a fallback
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  });
-
-  // Add the streets layer to the map by default
-  osm.addTo(map);
-
-  // Create a layer control
-  const baseMaps = {
-    "Streets": streets,
-    "Satellite": satellite,
-    "Satellite with Labels": satelliteWithLabels,
-    "OpenStreetMap": osm
-  };
-
-  L.control.layers(baseMaps).addTo(map);
+    let currentMarker = null;
+    let currentRoute = null;
+    let markers = [];
+    let currentDay = null;
+    let routeControls = [];
+    let isRemovingLocations = false;
+    // Define the base layers using Esri tile layers
+    const streets = L.esri.basemapLayer('Streets');
+    const satellite = L.esri.basemapLayer('Imagery');
+    const satelliteWithLabels = L.layerGroup([
+      L.esri.basemapLayer('Imagery'),
+      L.esri.basemapLayer('ImageryLabels')
+    ]);
+    // Add OpenStreetMap as a fallback
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    });
+    // Add the streets layer to the map by default
+    osm.addTo(map);
+    // Create a layer control
+    const baseMaps = {
+      "Streets": streets,
+      "Satellite": satellite,
+      "Satellite with Labels": satelliteWithLabels,
+      "OpenStreetMap": osm
+    };
+    L.control.layers(baseMaps).addTo(map);
 
     function createDayButtons() {
       const dayButtons = document.getElementById('dayButtons');
@@ -756,14 +750,13 @@
             draggableWaypoints: false,
             fitSelectedRoutes: false,
             showAlternatives: false,
-            show: false,  // This hides the itinerary panel
-            collapsible: true,  // This allows the panel to be collapsed
-            collapsed: true  // This ensures the panel starts collapsed
+            show: false, // This hides the itinerary panel
+            collapsible: true, // This allows the panel to be collapsed
+            collapsed: true // This ensures the panel starts collapsed
           }).addTo(map);
-          
-         routeControl.getPlan().options.createItineraryContainer = function() {
-    return L.DomUtil.create('div', 'hidden');
-};
+          routeControl.getPlan().options.createItineraryContainer = function() {
+            return L.DomUtil.create('div', 'hidden');
+          };
         }
       });
       // Set view to current day's location
