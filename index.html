@@ -25,6 +25,10 @@
   <!-- Leaflet Routing Machine JavaScript -->
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <style>
     body,
     html {
@@ -127,15 +131,6 @@
       color: #2c3e50;
       margin-top: 0;
       cursor: pointer;
-    }
-
-    .weather-infoul {
-      padding-left: 20px;
-      margin-bottom: 0;
-    }
-
-    .weather-info li {
-      margin-bottom: 10px;
     }
 
     .weather-info h3:hover {
@@ -244,7 +239,9 @@
       text-decoration: underline;
     }
 
-    #addLocationBtn {
+    #addLocationBtn,
+    #editOriginBtn,
+    #removeLocationsBtn {
       background-color: #4682B4;
       color: white;
       border: none;
@@ -258,30 +255,14 @@
 
     #editOriginBtn {
       background-color: #40B5AD;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     #removeLocationsBtn {
       background-color: #FF5733;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     #editOriginBtn:hover {
-      background-color: #008080
+      background-color: #008080;
     }
 
     #removeLocationsBtn:hover {
@@ -296,9 +277,11 @@
       background-color: #D3D9D4;
       color: black;
       border: none;
-      padding: flex;
+      padding: 5px;
       cursor: pointer;
       font-size: 16px;
+      width: 100%;
+      margin-bottom: 10px;
     }
 
     @media (max-width: 768px) {
@@ -307,18 +290,18 @@
       }
 
       #sidebar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      width: auto;
-      max-height: 40vh;
-      overflow-y: auto;
-      background-color: #748D92;
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-      z-index: 1000;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: auto;
+        max-height: 40vh;
+        overflow-y: auto;
+        background-color: #748D92;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
       }
 
       .day-button {
@@ -357,311 +340,117 @@
         <button id="addLocationBtn">Add Location</button>
         <button id="removeLocationsBtn">Remove Locations</button>
       </div>
-
       <div class="weather-info" id="weatherInfo"></div>
-
       <div class="Recommended-Restaurants-info" id="restaurants"></div>
-
     </div>
     <div id="map"></div>
   </div>
+
   <script>
-    const tripData = [{
-        date: '24/9',
-        day: 1,
-        activities: ['Landing and drive to the hotel in the city of Kotor', 'A ride to the cable car + a mountain slide + a view of Kotor', 'Accommodation in Kotor'],
-        location: [42.4246, 18.7712],
-        restaurants: [{
-            name: 'Galion',
-            cuisine: 'Seafood',
-            rating: 4.5,
-            priceRange: '€€€',
-            address: 'Suranj bb, Kotor 85330 Montenegro',
-            description: 'Upscale dining with panoramic views of the Bay of Kotor.'
-          },
-          {
-            name: 'Konoba Scala Santa',
-            cuisine: 'Mediterranean',
-            rating: 4.7,
-            priceRange: '€€-€€€',
-            address: 'Trg od Salate bb, Kotor 85330 Montenegro',
-            description: 'Charming tavern offering local specialties in a historic setting.'
-          },
-          {
-            name: 'Bastion',
-            cuisine: 'Mediterranean',
-            rating: 4.6,
-            priceRange: '€€-€€€',
-            address: 'Stari Grad 517, Kotor 85330 Montenegro',
-            description: 'Elegant restaurant within the old city walls, featuring Mediterranean and Balkan cuisine.'
-          }
-        ],
-        locations: [{
-            name: 'Kotor Old Town',
-            coords: [42.4246, 18.7712]
-          },
-          {
-            name: 'Kotor Cable Car',
-            coords: [42.4255, 18.7711]
-          }
-        ]
-      },
-      {
-        date: '25/9',
-        day: 2,
-        activities: ['The Blue Cave attraction (3 hours including entering)', 'Kotor Tour', 'Possibility of shopping/travel to Gorzada', 'Accommodation in Kotor'],
-        location: [42.4246, 18.7712],
-        restaurants: [{
-            name: 'Tanjga',
-            cuisine: 'Barbecue',
-            rating: 4.8,
-            priceRange: '€',
-            address: 'Dobrota bb, Kotor 85330 Montenegro',
-            description: 'Popular spot for grilled meats and traditional Montenegrin dishes.'
-          },
-          {
-            name: 'Astoria',
-            cuisine: 'Mediterranean',
-            rating: 4.5,
-            priceRange: '€€-€€€',
-            address: 'Stari Grad 322, Kotor 85330 Montenegro',
-            description: 'Elegant restaurant offering a mix of international and Montenegrin cuisine.'
-          },
-          {
-            name: 'Cesarica',
-            cuisine: 'Seafood',
-            rating: 4.6,
-            priceRange: '€€-€€€',
-            address: 'Stari Grad, Kotor 85330 Montenegro',
-            description: 'Seafood restaurant with a cozy atmosphere and locally-sourced ingredients.'
-          }
-        ],
-        locations: []
-      },
-      {
-        date: '26/9',
-        day: 3,
-        activities: ['Driving towards Budva', 'Stop at Ploce beach with the pools on the sea', 'Lunch at Jaz beach (near and on the way) and drive to Budva', 'Accommodation in Budva'],
-        location: [42.2911, 18.8401],
-        restaurants: [{
-            name: 'Jadran',
-            cuisine: 'Seafood',
-            rating: 4.4,
-            priceRange: '€€-€€€',
-            address: 'Slovenska Obala, Budva 85310 Montenegro',
-            description: 'Beachfront restaurant offering fresh seafood and panoramic views of the Adriatic.'
-          },
-          {
-            name: 'Demižana',
-            cuisine: 'Mediterranean',
-            rating: 4.5,
-            priceRange: '€€-€€€',
-            address: 'Slovenska Obala bb, Budva 85310 Montenegro',
-            description: 'Seafood specialist with a romantic atmosphere and stunning sea views.'
-          },
-          {
-            name: 'Porto',
-            cuisine: 'Mediterranean',
-            rating: 4.3,
-            priceRange: '€€-€€€',
-            address: 'Slovenska plaza bb, Budva 85310 Montenegro',
-            description: 'Upscale dining with a focus on Mediterranean cuisine and an extensive wine list.'
-          }
-        ],
-        locations: []
-      },
-      {
-        date: '27/9',
-        day: 4,
-        activities: ['Budva city tour + ancient city', 'Mogren beach + sailing to Sveti Nikola beach', 'Continue a tour of the city and a relaxed evening', 'Accommodation in Budva'],
-        location: [42.2911, 18.8401],
-        restaurants: [{
-            name: 'Konoba Stari Grad',
-            cuisine: 'Mediterranean',
-            rating: 4.6,
-            priceRange: '€€-€€€',
-            address: 'Njegoseva 152, Budva 85310 Montenegro',
-            description: 'Traditional Montenegrin cuisine with a modern twist, located in the heart of Old Town.'
-          },
-          {
-            name: 'Astoria',
-            cuisine: 'Mediterranean',
-            rating: 4.5,
-            priceRange: '€€€€',
-            address: 'Topliski Put bb, Budva 85310 Montenegro',
-            description: 'Fine dining experience with international cuisine and a sophisticated ambiance.'
-          },
-          {
-            name: 'Bokun',
-            cuisine: 'Mediterranean',
-            rating: 4.4,
-            priceRange: '€€-€€€',
-            address: 'Cara Dusana bb, Budva 85310 Montenegro',
-            description: 'Cozy tavern serving traditional Montenegrin dishes and local wines.'
-          }
-        ],
-        locations: []
-      },
-      {
-        date: '28/9',
-        day: 5,
-        activities: ['Drive to Sveti Stefan beach with houses on the rocks', 'Early lunch in the town of Beici + its beaches', 'Travel to Ostrog Monastery and from there to Zabljak', 'Accommodation in Zabljak'],
-        location: [43.1547, 19.1228],
-        restaurants: [{
-            name: 'Sučelica',
-            cuisine: 'Local',
-            rating: 4.4,
-            priceRange: '€€',
-            address: 'Sucelica, Zabljak 84220 Montenegro',
-            description: 'Mountain lodge restaurant offering hearty meals with a view of Durmitor National Park.'
-          },
-          {
-            name: 'Momcilov Grad',
-            cuisine: 'Local',
-            rating: 4.3,
-            priceRange: '€€',
-            address: 'Durmitor National Park, Zabljak 84220 Montenegro',
-            description: 'Traditional restaurant known for its local specialties and cozy fireplace.'
-          },
-          {
-            name: 'Zlatiborska Noc',
-            cuisine: 'Serbian',
-            rating: 4.5,
-            priceRange: '€€',
-            address: 'Zabljak, Montenegro',
-            description: 'Rustic tavern serving authentic mountain cuisine and homemade rakija.'
-          }
-        ],
-        locations: []
-      },
-      {
-        date: '29/9',
-        day: 6,
-        activities: ['Drive to Tara Bridge + Omegas', 'Black lake + track', 'Driving through the beautiful and secluded P14 road', 'Accommodation in Pluzine'],
-        location: [43.1519, 18.8425],
-        restaurants: [{
-            name: 'Konoba Piva',
-            cuisine: 'Local',
-            rating: 4.4,
-            priceRange: '€€',
-            address: 'Pluzine, Montenegro',
-            description: 'Lakeside restaurant offering spectacular views of Piva Lake and traditional Montenegrin dishes.'
-          },
-          {
-            name: 'Restoran Jezero',
-            cuisine: 'Local',
-            rating: 4.2,
-            priceRange: '€€',
-            address: 'Pluzine, Montenegro',
-            description: 'Scenic restaurant with terrace seating overlooking Piva Lake, specializing in fresh fish.'
-          },
-          {
-            name: 'Konak Moravka',
-            cuisine: 'Local',
-            rating: 4.3,
-            priceRange: '€€',
-            address: 'Pluzine, Montenegro',
-            description: 'Family-run tavern known for its homemade cheese, prosciutto, and organic produce from nearby farms.'
-          }
-        ],
-        locations: []
-      },
-      {
-        date: '30/9',
-        day: 7,
-        activities: ['A trip to rafting in Pive', 'Driving back to sleep in the airport area', 'Accommodation in Tivat'],
-        location: [42.4047, 18.7328],
-        restaurants: [{
-            name: 'One',
-            cuisine: 'International',
-            rating: 4.5,
-            priceRange: '€€€€',
-            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
-            description: 'Upscale restaurant in Porto Montenegro, featuring international cuisine and a stylish atmosphere.'
-          },
-          {
-            name: 'Prova',
-            cuisine: 'Mediterranean',
-            rating: 4.4,
-            priceRange: '€€-€€€',
-            address: 'Obala Iva Novakovica, Tivat 85320 Montenegro',
-            description: 'Seafront restaurant offering a mix of Mediterranean and local specialties with beautiful bay views.'
-          },
-          {
-            name: 'Murano',
-            cuisine: 'Mediterranean',
-            rating: 4.3,
-            priceRange: '€€-€€€',
-            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
-            description: 'Elegant dining experience in Porto Montenegro, known for its creative cuisine and cocktails.'
-          }
-        ],
-        locations: []
-      },
-      {
-        date: '1/10',
-        day: 8,
-        activities: ['Driving to the airport', 'Flight back to Israel'],
-        location: [42.4047, 18.7328],
-        restaurants: [{
-            name: 'Byblos',
-            cuisine: 'Lebanese',
-            rating: 4.4,
-            priceRange: '€€-€€€',
-            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
-            description: 'Authentic Lebanese cuisine in a luxurious setting within Porto Montenegro.'
-          },
-          {
-            name: 'Pine',
-            cuisine: 'International',
-            rating: 4.3,
-            priceRange: '€€€€',
-            address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
-            description: 'Sophisticated restaurant offering international cuisine with a focus on locally sourced ingredients.'
-          },
-          {
-            name: 'Big Ben',
-            cuisine: 'British',
-            rating: 4.2,
-            priceRange: '€€-€€€',
-            address: 'Kalimanj bb, Tivat 85320 Montenegro',
-            description: 'British-style pub serving comfort food and a wide selection of beers in a casual atmosphere.'
-          }
-        ],
-        locations: []
-      }
-    ];
-    const map = L.map('map').setView([42.7087, 19.3744], 8);
-    let currentMarker = null;
-    let currentRoute = null;
-    let markers = [];
-    let currentDay = null;
-    let routeControls = [];
-    let isRemovingLocations = false;
-    // Define the base layers using Esri tile layers
-    const streets = L.esri.basemapLayer('Streets');
-    const satellite = L.esri.basemapLayer('Imagery');
-    const satelliteWithLabels = L.layerGroup([
-      L.esri.basemapLayer('Imagery'),
-      L.esri.basemapLayer('ImageryLabels')
-    ]);
-    // Add OpenStreetMap as a fallback
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    });
-    // Add the streets layer to the map by default
-    osm.addTo(map);
-    // Create a layer control
-    const baseMaps = {
-      "Streets": streets,
-      "Satellite": satellite,
-      "Satellite with Labels": satelliteWithLabels,
-      "OpenStreetMap": osm
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyB_R7X8LmunLg0gQCi43QtX1zRpivj0Eyc",
+      authDomain: "monte-trip-explorer.firebaseapp.com",
+      databaseURL: "https://monte-trip-explorer-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "monte-trip-explorer",
+      storageBucket: "monte-trip-explorer.appspot.com",
+      messagingSenderId: "276849748308",
+      appId: "1:276849748308:web:104aea5ee9e0bacbdec0c1",
+      measurementId: "G-3Z0HS0SZJP"
     };
-    L.control.layers(baseMaps).addTo(map);
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase initialized:", firebase.app().name);
+    const database = firebase.database();
+    console.log("Database reference created");
+    let tripData = [];
+    let map, currentDay, currentMarker, currentRoute, markers = [],
+      routeControls = [],
+      isRemovingLocations = false;
+
+    function loadFromFirebase() {
+      database.ref('tripData').once('value')
+        .then((snapshot) => {
+          console.log("Firebase snapshot:", snapshot.val());
+          if (snapshot.exists()) {
+            tripData = snapshot.val();
+            if (!Array.isArray(tripData) || tripData.length === 0) {
+              console.error("Invalid data structure in Firebase:", tripData);
+              throw new Error("Invalid data structure in Firebase");
+            }
+          } else {
+            console.log("No data in Firebase, initializing with default data");
+            tripData = getDefaultTripData();
+            saveToFirebase();
+          }
+          initializeApp();
+        })
+        .catch((error) => {
+          console.error("Detailed error loading data from Firebase:", error);
+          tripData = getDefaultTripData();
+          initializeApp();
+        });
+    }
+
+    function saveToFirebase() {
+      database.ref('tripData').set(tripData)
+        .then(() => {
+          console.log("Data saved successfully to Firebase");
+        })
+        .catch((error) => {
+          console.error("Error saving data to Firebase:", error);
+        });
+    }
+
+    function initializeApp() {
+      console.log("Initializing app with tripData:", tripData);
+      if (Array.isArray(tripData) && tripData.length > 0 && tripData[0].day) {
+        createDayButtons();
+        initializeMap();
+        showDay(tripData[0]);
+      } else {
+        console.error("Invalid tripData structure:", tripData);
+        tripData = getDefaultTripData();
+        createDayButtons();
+        initializeMap();
+        showDay(tripData[0]);
+      }
+    }
+
+    function initializeMap() {
+      map = L.map('map').setView([42.7087, 19.3744], 8);
+      let currentMarker = null;
+      let currentRoute = null;
+      let markers = [];
+      let currentDay = null;
+      let routeControls = [];
+      let isRemovingLocations = false;
+      // Define the base layers using Esri tile layers
+      const streets = L.esri.basemapLayer('Streets');
+      const satellite = L.esri.basemapLayer('Imagery');
+      const satelliteWithLabels = L.layerGroup([
+        L.esri.basemapLayer('Imagery'),
+        L.esri.basemapLayer('ImageryLabels')
+      ]);
+      // Add OpenStreetMap as a fallback
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      });
+      // Add the streets layer to the map by default
+      osm.addTo(map);
+      // Create a layer control
+      const baseMaps = {
+        "Streets": streets,
+        "Satellite": satellite,
+        "Satellite with Labels": satelliteWithLabels,
+        "OpenStreetMap": osm
+      };
+      L.control.layers(baseMaps).addTo(map);
+    }
 
     function createDayButtons() {
       const dayButtons = document.getElementById('dayButtons');
+      dayButtons.innerHTML = ''; // Clear existing buttons
       tripData.forEach(day => {
         const button = document.createElement('button');
         button.className = 'day-button';
@@ -676,41 +465,13 @@
       document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
       document.querySelector(`.day-button:nth-child(${day.day})`).classList.add('active');
       updateMap();
-      const activitiesDiv = document.getElementById('activities');
-      activitiesDiv.innerHTML = `
-            <h3>Day ${day.day} (${day.date}) Activities:</h3>
-            <ul id="activitiesList">
-                ${day.activities.map(activity => `<li>${activity}</li>`).join('')}
-            </ul>
-            <button class="edit-button" onclick="editActivities()">Edit Activities</button>
-        `;
-      const restaurantsDiv = document.getElementById('restaurants');
-      restaurantsDiv.innerHTML = `<h3>Recommended Restaurants:</h3>` +
-        day.restaurants.map(restaurant => `
-                <div class="restaurant-card" onclick="openInGoogleMaps('${restaurant.name}, ${restaurant.address}')">
-                    <div class="restaurant-name">${restaurant.name}</div>
-                    <div class="restaurant-details">
-                        <span class="restaurant-cuisine">${restaurant.cuisine}</span> | 
-                        <span class="restaurant-rating">★ ${restaurant.rating}</span> | 
-                        <span class="restaurant-price">${restaurant.priceRange}</span>
-                    </div>
-                    <div class="restaurant-description">${restaurant.description}</div>
-                </div>
-            `).join('');
-      const weatherInfo = document.getElementById('weatherInfo');
-      const randomTemp = Math.floor(Math.random() * 10) + 20;
-      const randomHumidity = Math.floor(Math.random() * 30) + 50;
-      weatherInfo.innerHTML = `
-            <h3 onclick="openWeatherWebsite('${day.date}')">Weather Forecast for ${day.date}</h3>
-            <div class="icon-text"><i class="fas fa-thermometer-half"></i>  Temperature: ${randomTemp}°C</div>
-            <div class="icon-text"><i class="fas fa-tint"></i> Humidity: ${randomHumidity}%</div>
-            <div class="icon-text"><i class="fas fa-sun"></i> Mostly sunny</div>
-        `;
+      updateActivities();
+      updateRestaurants();
+      updateWeather();
       updateLocationsList();
     }
-  </script>
-  <script>
-    function updateMap() {
+
+  function updateMap() {
       map.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Routing.Control) {
           map.removeLayer(layer);
@@ -776,12 +537,51 @@
         }
       });
       // Set view to current day's location
-      map.setView(currentDay.location, 12);
+      map.setView(currentDay.location, 15);
       // Show current day's route
       const currentDayIndex = tripData.findIndex(day => day.day === currentDay.day);
       if (currentDayIndex !== -1 && routeControls[currentDayIndex]) {
         routeControls[currentDayIndex].show(true);
       }
+    }
+
+    function updateActivities() {
+      const activitiesDiv = document.getElementById('activities');
+      activitiesDiv.innerHTML = `
+            <h3>Day ${currentDay.day} (${currentDay.date}) Activities:</h3>
+            <ul id="activitiesList">
+                ${currentDay.activities.map(activity => `<li>${activity}</li>`).join('')}
+            </ul>
+            <button class="edit-button" onclick="editActivities()">Edit Activities</button>
+        `;
+    }
+
+    function updateRestaurants() {
+      const restaurantsDiv = document.getElementById('restaurants');
+      restaurantsDiv.innerHTML = `<h3>Recommended Restaurants:</h3>` +
+        currentDay.restaurants.map(restaurant => `
+                <div class="restaurant-card" onclick="openInGoogleMaps('${restaurant.name}, ${restaurant.address}')">
+                    <div class="restaurant-name">${restaurant.name}</div>
+                    <div class="restaurant-details">
+                        <span class="restaurant-cuisine">${restaurant.cuisine}</span> | 
+                        <span class="restaurant-rating">★ ${restaurant.rating}</span> | 
+                        <span class="restaurant-price">${restaurant.priceRange}</span>
+                    </div>
+                    <div class="restaurant-description">${restaurant.description}</div>
+                </div>
+            `).join('');
+    }
+
+    function updateWeather() {
+      const weatherInfo = document.getElementById('weatherInfo');
+      const randomTemp = Math.floor(Math.random() * 10) + 20;
+      const randomHumidity = Math.floor(Math.random() * 30) + 50;
+      weatherInfo.innerHTML = `
+            <h3 onclick="openWeatherWebsite('${currentDay.date}')">Weather Forecast for ${currentDay.date}</h3>
+            <div class="icon-text"><i class="fas fa-thermometer-half"></i>  Temperature: ${randomTemp}°C</div>
+            <div class="icon-text"><i class="fas fa-tint"></i> Humidity: ${randomHumidity}%</div>
+            <div class="icon-text"><i class="fas fa-sun"></i> Mostly sunny</div>
+        `;
     }
 
     function updateLocationsList() {
@@ -814,16 +614,17 @@
       const activitiesDiv = document.getElementById('activities');
       const currentActivities = currentDay.activities.join('\n');
       activitiesDiv.innerHTML = `
-    <h3>Edit Day ${currentDay.day} (${currentDay.date}) Activities:</h3>
-    <textarea id="editActivitiesArea" class="edit-area">${currentActivities}</textarea>
-    <button class="edit-button" onclick="saveActivities()">Save Activities</button>
-  `;
+            <h3>Edit Day ${currentDay.day} (${currentDay.date}) Activities:</h3>
+            <textarea id="editActivitiesArea" class="edit-area">${currentActivities}</textarea>
+            <button class="edit-button" onclick="saveActivities()">Save Activities</button>
+        `;
     }
 
     function saveActivities() {
       const editedActivities = document.getElementById('editActivitiesArea').value.split('\n').filter(activity => activity.trim() !== '');
       currentDay.activities = editedActivities;
       showDay(currentDay);
+      saveToFirebase();
     }
 
     function openInGoogleMaps(query) {
@@ -848,6 +649,7 @@
           });
           updateMap();
           updateLocationsList();
+          saveToFirebase();
         }
       });
     });
@@ -856,6 +658,7 @@
         currentDay.location = [e.latlng.lat, e.latlng.lng];
         updateMap();
         updateLocationsList();
+        saveToFirebase();
       });
     });
     document.getElementById('removeLocationsBtn').addEventListener('click', function() {
@@ -868,10 +671,279 @@
       currentDay.locations.splice(index, 1);
       updateMap();
       updateLocationsList();
+      saveToFirebase();
     }
-    createDayButtons();
-    showDay(tripData[0]); // Show first day by default
+
+    function getDefaultTripData() {
+      // Return your default trip data here
+      return [{
+          date: '24/9',
+          day: 1,
+          activities: ['Landing and drive to the hotel in the city of Kotor', 'A ride to the cable car + a mountain slide + a view of Kotor', 'Accommodation in Kotor'],
+          location: [42.4246, 18.7712],
+          restaurants: [{
+              name: 'Galion',
+              cuisine: 'Seafood',
+              rating: 4.5,
+              priceRange: '€€€',
+              address: 'Suranj bb, Kotor 85330 Montenegro',
+              description: 'Upscale dining with panoramic views of the Bay of Kotor.'
+            },
+            {
+              name: 'Konoba Scala Santa',
+              cuisine: 'Mediterranean',
+              rating: 4.7,
+              priceRange: '€€-€€€',
+              address: 'Trg od Salate bb, Kotor 85330 Montenegro',
+              description: 'Charming tavern offering local specialties in a historic setting.'
+            },
+            {
+              name: 'Bastion',
+              cuisine: 'Mediterranean',
+              rating: 4.6,
+              priceRange: '€€-€€€',
+              address: 'Stari Grad 517, Kotor 85330 Montenegro',
+              description: 'Elegant restaurant within the old city walls, featuring Mediterranean and Balkan cuisine.'
+            }
+          ],
+          locations: [{
+              name: 'Kotor Old Town',
+              coords: [42.4246, 18.7712]
+            },
+            {
+              name: 'Kotor Cable Car',
+              coords: [42.4255, 18.7711]
+            }
+          ]
+        },
+        {
+          date: '25/9',
+          day: 2,
+          activities: ['The Blue Cave attraction (3 hours including entering)', 'Kotor Tour', 'Possibility of shopping/travel to Gorzada', 'Accommodation in Kotor'],
+          location: [42.4246, 18.7712],
+          restaurants: [{
+              name: 'Tanjga',
+              cuisine: 'Barbecue',
+              rating: 4.8,
+              priceRange: '€',
+              address: 'Dobrota bb, Kotor 85330 Montenegro',
+              description: 'Popular spot for grilled meats and traditional Montenegrin dishes.'
+            },
+            {
+              name: 'Astoria',
+              cuisine: 'Mediterranean',
+              rating: 4.5,
+              priceRange: '€€-€€€',
+              address: 'Stari Grad 322, Kotor 85330 Montenegro',
+              description: 'Elegant restaurant offering a mix of international and Montenegrin cuisine.'
+            },
+            {
+              name: 'Cesarica',
+              cuisine: 'Seafood',
+              rating: 4.6,
+              priceRange: '€€-€€€',
+              address: 'Stari Grad, Kotor 85330 Montenegro',
+              description: 'Seafood restaurant with a cozy atmosphere and locally-sourced ingredients.'
+            }
+          ],
+          locations: []
+        },
+        {
+          date: '26/9',
+          day: 3,
+          activities: ['Driving towards Budva', 'Stop at Ploce beach with the pools on the sea', 'Lunch at Jaz beach (near and on the way) and drive to Budva', 'Accommodation in Budva'],
+          location: [42.2911, 18.8401],
+          restaurants: [{
+              name: 'Jadran',
+              cuisine: 'Seafood',
+              rating: 4.4,
+              priceRange: '€€-€€€',
+              address: 'Slovenska Obala, Budva 85310 Montenegro',
+              description: 'Beachfront restaurant offering fresh seafood and panoramic views of the Adriatic.'
+            },
+            {
+              name: 'Demižana',
+              cuisine: 'Mediterranean',
+              rating: 4.5,
+              priceRange: '€€-€€€',
+              address: 'Slovenska Obala bb, Budva 85310 Montenegro',
+              description: 'Seafood specialist with a romantic atmosphere and stunning sea views.'
+            },
+            {
+              name: 'Porto',
+              cuisine: 'Mediterranean',
+              rating: 4.3,
+              priceRange: '€€-€€€',
+              address: 'Slovenska plaza bb, Budva 85310 Montenegro',
+              description: 'Upscale dining with a focus on Mediterranean cuisine and an extensive wine list.'
+            }
+          ],
+          locations: []
+        },
+        {
+          date: '27/9',
+          day: 4,
+          activities: ['Budva city tour + ancient city', 'Mogren beach + sailing to Sveti Nikola beach', 'Continue a tour of the city and a relaxed evening', 'Accommodation in Budva'],
+          location: [42.2911, 18.8401],
+          restaurants: [{
+              name: 'Konoba Stari Grad',
+              cuisine: 'Mediterranean',
+              rating: 4.6,
+              priceRange: '€€-€€€',
+              address: 'Njegoseva 152, Budva 85310 Montenegro',
+              description: 'Traditional Montenegrin cuisine with a modern twist, located in the heart of Old Town.'
+            },
+            {
+              name: 'Astoria',
+              cuisine: 'Mediterranean',
+              rating: 4.5,
+              priceRange: '€€€€',
+              address: 'Topliski Put bb, Budva 85310 Montenegro',
+              description: 'Fine dining experience with international cuisine and a sophisticated ambiance.'
+            },
+            {
+              name: 'Bokun',
+              cuisine: 'Mediterranean',
+              rating: 4.4,
+              priceRange: '€€-€€€',
+              address: 'Cara Dusana bb, Budva 85310 Montenegro',
+              description: 'Cozy tavern serving traditional Montenegrin dishes and local wines.'
+            }
+          ],
+          locations: []
+        },
+        {
+          date: '28/9',
+          day: 5,
+          activities: ['Drive to Sveti Stefan beach with houses on the rocks', 'Early lunch in the town of Beici + its beaches', 'Travel to Ostrog Monastery and from there to Zabljak', 'Accommodation in Zabljak'],
+          location: [43.1547, 19.1228],
+          restaurants: [{
+              name: 'Sučelica',
+              cuisine: 'Local',
+              rating: 4.4,
+              priceRange: '€€',
+              address: 'Sucelica, Zabljak 84220 Montenegro',
+              description: 'Mountain lodge restaurant offering hearty meals with a view of Durmitor National Park.'
+            },
+            {
+              name: 'Momcilov Grad',
+              cuisine: 'Local',
+              rating: 4.3,
+              priceRange: '€€',
+              address: 'Durmitor National Park, Zabljak 84220 Montenegro',
+              description: 'Traditional restaurant known for its local specialties and cozy fireplace.'
+            },
+            {
+              name: 'Zlatiborska Noc',
+              cuisine: 'Serbian',
+              rating: 4.5,
+              priceRange: '€€',
+              address: 'Zabljak, Montenegro',
+              description: 'Rustic tavern serving authentic mountain cuisine and homemade rakija.'
+            }
+          ],
+          locations: []
+        },
+        {
+          date: '29/9',
+          day: 6,
+          activities: ['Drive to Tara Bridge + Omegas', 'Black lake + track', 'Driving through the beautiful and secluded P14 road', 'Accommodation in Pluzine'],
+          location: [43.1519, 18.8425],
+          restaurants: [{
+              name: 'Konoba Piva',
+              cuisine: 'Local',
+              rating: 4.4,
+              priceRange: '€€',
+              address: 'Pluzine, Montenegro',
+              description: 'Lakeside restaurant offering spectacular views of Piva Lake and traditional Montenegrin dishes.'
+            },
+            {
+              name: 'Restoran Jezero',
+              cuisine: 'Local',
+              rating: 4.2,
+              priceRange: '€€',
+              address: 'Pluzine, Montenegro',
+              description: 'Scenic restaurant with terrace seating overlooking Piva Lake, specializing in fresh fish.'
+            },
+            {
+              name: 'Konak Moravka',
+              cuisine: 'Local',
+              rating: 4.3,
+              priceRange: '€€',
+              address: 'Pluzine, Montenegro',
+              description: 'Family-run tavern known for its homemade cheese, prosciutto, and organic produce from nearby farms.'
+            }
+          ],
+          locations: []
+        },
+        {
+          date: '30/9',
+          day: 7,
+          activities: ['A trip to rafting in Pive', 'Driving back to sleep in the airport area', 'Accommodation in Tivat'],
+          location: [42.4047, 18.7328],
+          restaurants: [{
+              name: 'One',
+              cuisine: 'International',
+              rating: 4.5,
+              priceRange: '€€€€',
+              address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+              description: 'Upscale restaurant in Porto Montenegro, featuring international cuisine and a stylish atmosphere.'
+            },
+            {
+              name: 'Prova',
+              cuisine: 'Mediterranean',
+              rating: 4.4,
+              priceRange: '€€-€€€',
+              address: 'Obala Iva Novakovica, Tivat 85320 Montenegro',
+              description: 'Seafront restaurant offering a mix of Mediterranean and local specialties with beautiful bay views.'
+            },
+            {
+              name: 'Murano',
+              cuisine: 'Mediterranean',
+              rating: 4.3,
+              priceRange: '€€-€€€',
+              address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+              description: 'Elegant dining experience in Porto Montenegro, known for its creative cuisine and cocktails.'
+            }
+          ],
+          locations: []
+        },
+        {
+          date: '1/10',
+          day: 8,
+          activities: ['Driving to the airport', 'Flight back to Israel'],
+          location: [42.4047, 18.7328],
+          restaurants: [{
+              name: 'Byblos',
+              cuisine: 'Lebanese',
+              rating: 4.4,
+              priceRange: '€€-€€€',
+              address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+              description: 'Authentic Lebanese cuisine in a luxurious setting within Porto Montenegro.'
+            },
+            {
+              name: 'Pine',
+              cuisine: 'International',
+              rating: 4.3,
+              priceRange: '€€€€',
+              address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
+              description: 'Sophisticated restaurant offering international cuisine with a focus on locally sourced ingredients.'
+            },
+            {
+              name: 'Big Ben',
+              cuisine: 'British',
+              rating: 4.2,
+              priceRange: '€€-€€€',
+              address: 'Kalimanj bb, Tivat 85320 Montenegro',
+              description: 'British-style pub serving comfort food and a wide selection of beers in a casual atmosphere.'
+            }
+          ],
+          locations: []
+        }
+        // ... other days ...
+      ];
+    }
+    // Initialize the application
+    loadFromFirebase();
   </script>
 </body>
-
-</html>
