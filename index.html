@@ -1,243 +1,312 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
-  <base href="https://websim.ai//@idotop/best-restaurants-in-montenegro-sty%20implement%20the%20code%20from%20this%20to%20the%20resturants%20recomendation%20tab%20make%20it%20work%20like%20it%20work%20it%20that%20website">
-  <!DOCTYPE html>
-  <html lang="he" dir="rtl">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Montenegro Trip Explorer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+  <style>
+    body,
+    html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #f0f4f8;
+    }
 
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>מסע למונטנגרו - מפת טיול</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
-    <style>
-      body,
-      html {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: 'Heebo', sans-serif;
-        background-color: #f0f4f8;
-      }
+    #container {
+      display: flex;
+      height: 100%;
+    }
 
+    #sidebar {
+      width: 400px;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #fffff1;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+    }
+
+    #map {
+      flex-grow: 1;
+    }
+
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
+    .day-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .day-button {
+      flex: 1 0 calc(25% - 10px);
+      padding: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 5px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .day-button:hover {
+      background-color: #2980b9;
+      transform: translateY(-2px);
+    }
+
+    .day-button.active {
+      background-color: #2c3e50;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-card {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-card h3 {
+      color: #3498db;
+      margin-top: 0;
+    }
+
+    .info-card ul {
+      padding-left: 20px;
+      margin-bottom: 0;
+    }
+
+    .info-card li {
+      margin-bottom: 10px;
+    }
+
+    .weather-info {
+      background-color: #ecf0f1;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    .weather-info h3 {
+      color: #3498db;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .weather-info h3:hover {
+      color: #2980b9;
+      text-decoration: underline;
+    }
+
+    .icon-text {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      color: #34495e;
+    }
+
+    .icon-text i {
+      margin-right: 10px;
+      width: 20px;
+      color: #3498db;
+    }
+
+    .restaurant-card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .restaurant-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .restaurant-name {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+
+    .restaurant-details {
+      font-size: 0.9em;
+      color: #7f8c8d;
+    }
+
+    .restaurant-rating {
+      color: #f39c12;
+      font-weight: bold;
+    }
+
+    .edit-button {
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .edit-button:hover {
+      background-color: #27ae60;
+    }
+
+    .edit-area {
+      width: 100%;
+      min-height: 100px;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #bdc3c7;
+      border-radius: 5px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+    }
+
+    #locations {
+      margin-top: 20px;
+    }
+
+    #locationsList {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    #locationsList li {
+      margin-bottom: 5px;
+    }
+
+    #locationsList a {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    #locationsList a:hover {
+      text-decoration: underline;
+    }
+
+    #addLocationBtn {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    #editOriginBtn {
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    #removeLocationsBtn {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    #editOriginBtn:hover {
+      background-color: #27ae60
+    }
+
+    #removeLocationsBtn:hover {
+      background-color: #2980b9;
+    }
+
+    #addLocationBtn:hover {
+      background-color: #2980b9;
+    }
+
+    @media (max-width: 768px) {
       #container {
-        display: flex;
-        height: 100%;
-        flex-direction: Right;  //row-reverse
+        flex-direction: column;
       }
 
       #sidebar {
-        width: 400px;
-        padding: 20px;
-        overflow-y: auto;
-        background-color: #222222;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
-      }
-
-      #map {
-        flex-grow: 1;
-      }
-
-      h2 {
-        color: #3498db;
-        margin-bottom: 20px;
-      }
-
-      .day-buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 20px;
+        width: 100%;
+        max-height: 50%;
       }
 
       .day-button {
-        flex: 1 0 calc(25% - 10px);
-        padding: 10px;
-        background-color: #3498db;
-        color: white;
-        border: none;
+        flex: 1 0 calc(33.33% - 10px);
+      }
+
+      .remove-location {
+        color: red;
         cursor: pointer;
-        transition: all 0.3s ease;
-        border-radius: 5px;
-        font-size: 14px;
-        text-align: center;
+        margin-left: 5px;
       }
 
-      .day-button:hover {
-        background-color: #2980b9;
-        transform: translateY(-4px);
+      .location-coordinates {
+        font-size: 0.8em;
+        color: #777;
+        margin-left: 5px;
       }
-
-      .day-button.active {
-        background-color: #2c3e50;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .info-card {
-        background-color: #ffffff;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .info-card h3 {
-        color: #3498db;
-        margin-top: 0;
-      }
-
-      .info-card ul {
-        padding-right: 20px;
-        margin-bottom: 0;
-      }
-
-      .info-card li {
-        margin-bottom: 10px;
-      }
-
-      .weather-info {
-        background-color: #ecf0f1;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 20px;
-      }
-
-      .weather-info h3 {
-        color: #3498db;
-        cursor: pointer;
-        transition: color 0.3s ease;
-      }
-
-      .weather-info h3:hover {
-        color: #2980b9;
-        text-decoration: underline;
-      }
-
-      .icon-text {
-        display: flex;
-        align-items: center;
-        margin-bottom: 5px;
-        color: #34495e;
-      }
-
-      .icon-text i {
-        margin-left: 10px;
-        width: 20px;
-        color: #3498db;
-      }
-
-      .restaurant-link {
-        color: #3498db;
-        text-decoration: none;
-        transition: color 0.3s ease;
-      }
-
-      .restaurant-link:hover {
-        color: #2980b9;
-        text-decoration: underline;
-      }
-
-      .restaurant-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 15px;
-        margin-bottom: 15px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-      }
-
-      .restaurant-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .restaurant-name {
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 5px;
-      }
-
-      .restaurant-details {
-        font-size: 0.9em;
-        color: #7f8c8d;
-      }
-
-      .restaurant-rating {
-        color: #f39c12;
-        font-weight: bold;
-      }
-
-      .restaurant-hours {
-        font-size: 0.85em;
-        color: #34495e;
-        margin-top: 5px;
-      }
-
-      .edit-button {
-        background-color: #2ecc71;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-top: 10px;
-      }
-
-      .edit-button:hover {
-        background-color: #27ae60;
-      }
-
-      .edit-area {
-        width: 100%;
-        min-height: 100px;
-        margin-top: 10px;
-        padding: 10px;
-        border: 1px solid #bdc3c7;
-        border-radius: 5px;
-        font-family: 'Heebo', sans-serif;
-        font-size: 14px;
-      }
-
-      @media (max-width: 768px) {
-        #container {
-          flex-direction: column;
-        }
-
-        #sidebar {
-          width: 100%;
-          max-height: 50%;
-        }
-
-        .day-button {
-          flex: 1 0 calc(33.33% - 10px);
-        }
-      }
-    </style>
-  </head>
+    }
+  </style>
+</head>
 
 <body>
   <div id="container">
     <div id="sidebar">
-      <h2> מפת טיול למונטנגרו</h2>
+      <h2>Montenegro Trip Explorer</h2>
       <div class="day-buttons" id="dayButtons"></div>
       <div class="info-card" id="activities"></div>
       <div class="info-card" id="restaurants"></div>
+      <div class="info-card" id="locations">
+        <h3>Locations</h3>
+        <div id="originInput">
+          <label for="origin">Origin:</label>
+          <input type="text" id="origin" placeholder="Enter origin location" readonly>
+          <button id="editOriginBtn">Edit Origin</button>
+        </div>
+        <ul id="locationsList"></ul>
+        <button id="addLocationBtn">Add Location</button>
+        <button id="removeLocationsBtn">Remove Locations</button>
+      </div>
       <div class="weather-info" id="weatherInfo"></div>
     </div>
     <div id="map"></div>
   </div>
-
   <script>
     const tripData = [{
         date: '24/9',
         day: 1,
-        activities: ['נחיתה ונסיעה למלון בעיר קוטור', 'נסיעה לרכבל + מגלשת הרים + תצפית על קוטור', 'לינה בקוטור'],
+        activities: ['Landing and drive to the hotel in the city of Kotor', 'A ride to the cable car + a mountain slide + a view of Kotor', 'Accommodation in Kotor'],
         location: [42.4246, 18.7712],
         restaurants: [{
             name: 'Galion',
@@ -263,12 +332,21 @@
             address: 'Stari Grad 517, Kotor 85330 Montenegro',
             description: 'Elegant restaurant within the old city walls, featuring Mediterranean and Balkan cuisine.'
           }
+        ],
+        locations: [{
+            name: 'Kotor Old Town',
+            coords: [42.4246, 18.7712]
+          },
+          {
+            name: 'Kotor Cable Car',
+            coords: [42.4255, 18.7711]
+          }
         ]
       },
       {
         date: '25/9',
         day: 2,
-        activities: ['אטרקציית המערה הכחולה (3 שעות כולל כניסה)', 'סיור בקוטור', 'אפשרות לקניות/נסיעה לגורז׳דה', 'לינה בקוטור'],
+        activities: ['The Blue Cave attraction (3 hours including entering)', 'Kotor Tour', 'Possibility of shopping/travel to Gorzada', 'Accommodation in Kotor'],
         location: [42.4246, 18.7712],
         restaurants: [{
             name: 'Tanjga',
@@ -294,12 +372,13 @@
             address: 'Stari Grad, Kotor 85330 Montenegro',
             description: 'Seafood restaurant with a cozy atmosphere and locally-sourced ingredients.'
           }
-        ]
+        ],
+        locations: []
       },
       {
         date: '26/9',
         day: 3,
-        activities: ['נסיעה לכיוון בודווה', 'עצירה בחוף פלוצ׳ה עם הבריכות על הים', 'ארוחת צהריים בחוף יאז (קרוב ובדרך) ונסיעה לבודווה', 'לינה בבודווה'],
+        activities: ['Driving towards Budva', 'Stop at Ploce beach with the pools on the sea', 'Lunch at Jaz beach (near and on the way) and drive to Budva', 'Accommodation in Budva'],
         location: [42.2911, 18.8401],
         restaurants: [{
             name: 'Jadran',
@@ -325,12 +404,13 @@
             address: 'Slovenska plaza bb, Budva 85310 Montenegro',
             description: 'Upscale dining with a focus on Mediterranean cuisine and an extensive wine list.'
           }
-        ]
+        ],
+        locations: []
       },
       {
         date: '27/9',
         day: 4,
-        activities: ['סיור בעיר בודווה + העיר העתיקה', 'חוף מוגרן + שייט לחוף סווטי ניקולה', 'המשך סיור בעיר וערב רגוע', 'לינה בבודווה'],
+        activities: ['Budva city tour + ancient city', 'Mogren beach + sailing to Sveti Nikola beach', 'Continue a tour of the city and a relaxed evening', 'Accommodation in Budva'],
         location: [42.2911, 18.8401],
         restaurants: [{
             name: 'Konoba Stari Grad',
@@ -356,12 +436,13 @@
             address: 'Cara Dusana bb, Budva 85310 Montenegro',
             description: 'Cozy tavern serving traditional Montenegrin dishes and local wines.'
           }
-        ]
+        ],
+        locations: []
       },
       {
         date: '28/9',
         day: 5,
-        activities: ['נסיעה לחוף סווטי סטפן עם הבתים על הסלעים', 'ארוחת צהריים מוקדמת בעיירה בצ׳יצ׳י + החופים שלה', 'נסיעה למנזר אוסטרוג ומשם לז׳אבליאק', 'לינה בז׳אבליאק'],
+        activities: ['Drive to Sveti Stefan beach with houses on the rocks', 'Early lunch in the town of Beici + its beaches', 'Travel to Ostrog Monastery and from there to Zabljak', 'Accommodation in Zabljak'],
         location: [43.1547, 19.1228],
         restaurants: [{
             name: 'Sučelica',
@@ -387,12 +468,13 @@
             address: 'Zabljak, Montenegro',
             description: 'Rustic tavern serving authentic mountain cuisine and homemade rakija.'
           }
-        ]
+        ],
+        locations: []
       },
       {
         date: '29/9',
         day: 6,
-        activities: ['נסיעה לגשר טארה + אומגות', 'האגם השחור + מסלול', 'נסיעה דרך הכביש היפה והמבודד P14', 'לינה בפלוז׳ינה'],
+        activities: ['Drive to Tara Bridge + Omegas', 'Black lake + track', 'Driving through the beautiful and secluded P14 road', 'Accommodation in Pluzine'],
         location: [43.1519, 18.8425],
         restaurants: [{
             name: 'Konoba Piva',
@@ -418,12 +500,13 @@
             address: 'Pluzine, Montenegro',
             description: 'Family-run tavern known for its homemade cheese, prosciutto, and organic produce from nearby farms.'
           }
-        ]
+        ],
+        locations: []
       },
       {
         date: '30/9',
         day: 7,
-        activities: ['טיול לרפטינג בפיבה', 'נסיעה חזרה ללינה באזור שדה התעופה', 'לינה בטיבאט'],
+        activities: ['A trip to rafting in Pive', 'Driving back to sleep in the airport area', 'Accommodation in Tivat'],
         location: [42.4047, 18.7328],
         restaurants: [{
             name: 'One',
@@ -449,12 +532,13 @@
             address: 'Porto Montenegro Village, Tivat 85320 Montenegro',
             description: 'Elegant dining experience in Porto Montenegro, known for its creative cuisine and cocktails.'
           }
-        ]
+        ],
+        locations: []
       },
       {
         date: '1/10',
         day: 8,
-        activities: ['נסיעה לשדה התעופה', 'טיסה חזרה לישראל'],
+        activities: ['Driving to the airport', 'Flight back to Israel'],
         location: [42.4047, 18.7328],
         restaurants: [{
             name: 'Byblos',
@@ -480,24 +564,39 @@
             address: 'Kalimanj bb, Tivat 85320 Montenegro',
             description: 'British-style pub serving comfort food and a wide selection of beers in a casual atmosphere.'
           }
-        ]
+        ],
+        locations: []
       }
     ];
     let map = L.map('map').setView([42.7087, 19.3744], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
     let currentMarker = null;
-    let currentPolyline = null;
+    let currentRoute = null;
     let markers = [];
     let currentDay = null;
+    let routeControls = [];
+    let isRemovingLocations = false;
+    // Define the base layers
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    var esriWorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+    // Add the OpenStreetMap layer to the map
+    osm.addTo(map);
+    // Create a layer control
+    var baseMaps = {
+      "OpenStreetMap": osm,
+      "Satellite": esriWorldImagery
+    };
+    L.control.layers(baseMaps).addTo(map);
 
     function createDayButtons() {
       const dayButtons = document.getElementById('dayButtons');
       tripData.forEach(day => {
         const button = document.createElement('button');
         button.className = 'day-button';
-        button.textContent = `יום ${day.day} (${day.date})`;
+        button.textContent = `Day ${day.day} (${day.date})`;
         button.onclick = () => showDay(day);
         dayButtons.appendChild(button);
       });
@@ -507,91 +606,151 @@
       currentDay = day;
       document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
       document.querySelector(`.day-button:nth-child(${day.day})`).classList.add('active');
-      if (currentMarker) {
-        map.removeLayer(currentMarker);
-      }
-      if (currentPolyline) {
-        map.removeLayer(currentPolyline);
-      }
-      currentMarker = L.marker(day.location).addTo(map);
-      map.setView(day.location, 15);
-      if (day.day > 1) {
-        const previousDay = tripData[day.day - 2];
-        currentPolyline = L.polyline([previousDay.location, day.location], {
-          color: '#3628db',
-          weight: 5,
-          opacity: 0.7
-        }).addTo(map);
-      }
+      updateMap();
       const activitiesDiv = document.getElementById('activities');
       activitiesDiv.innerHTML = `
-                <h3>יום ${day.day} (${day.date}):</h3>
-                <ul id="activitiesList">
-                    ${day.activities.map(activity => `<li>${activity}</li>`).join('')}
-                </ul>
-                <button class="edit-button" onclick="editActivities()">ערוך פעילויות</button>
-            `;
+            <h3>Day ${day.day} (${day.date}) Activities:</h3>
+            <ul id="activitiesList">
+                ${day.activities.map(activity => `<li>${activity}</li>`).join('')}
+            </ul>
+            <button class="edit-button" onclick="editActivities()">Edit Activities</button>
+        `;
       const restaurantsDiv = document.getElementById('restaurants');
-      restaurantsDiv.innerHTML = `<h3>מסעדות מומלצות:</h3>` +
+      restaurantsDiv.innerHTML = `<h3>Recommended Restaurants:</h3>` +
         day.restaurants.map(restaurant => `
-                    <div class="restaurant-card" onclick="openInGoogleMaps('${restaurant.name}, ${restaurant.address}')">
-                        <div class="restaurant-name">${restaurant.name}</div>
-                        <div class="restaurant-details">
-                            <span class="restaurant-cuisine">${restaurant.cuisine}</span> | 
-                            <span class="restaurant-rating">★ ${restaurant.rating}</span> | 
-                            <span class="restaurant-price">${restaurant.priceRange}</span>
-                        </div>
-                        <div class="restaurant-description">${restaurant.description}</div>
+                <div class="restaurant-card" onclick="openInGoogleMaps('${restaurant.name}, ${restaurant.address}')">
+                    <div class="restaurant-name">${restaurant.name}</div>
+                    <div class="restaurant-details">
+                        <span class="restaurant-cuisine">${restaurant.cuisine}</span> | 
+                        <span class="restaurant-rating">★ ${restaurant.rating}</span> | 
+                        <span class="restaurant-price">${restaurant.priceRange}</span>
                     </div>
-                `).join('');
+                    <div class="restaurant-description">${restaurant.description}</div>
+                </div>
+            `).join('');
       const weatherInfo = document.getElementById('weatherInfo');
       const randomTemp = Math.floor(Math.random() * 10) + 20;
       const randomHumidity = Math.floor(Math.random() * 30) + 50;
       weatherInfo.innerHTML = `
-                <h3 onclick="openWeatherWebsite('${day.date}')">תחזית מזג האוויר ל-${day.date}</h3>
-                <div class="icon-text"><i class="fas fa-thermometer-half"></i> טמפרטורה: ${randomTemp}°C</div>
-                <div class="icon-text"><i class="fas fa-tint"></i> לחות: ${randomHumidity}%</div>
-                <div class="icon-text"><i class="fas fa-sun"></i> ברובו שמשי</div>
-            `;
+            <h3 onclick="openWeatherWebsite('${day.date}')">Weather Forecast for ${day.date}</h3>
+            <div class="icon-text"><i class="fas fa-thermometer-half"></i> Temperature: ${randomTemp}°C</div>
+            <div class="icon-text"><i class="fas fa-tint"></i> Humidity: ${randomHumidity}%</div>
+            <div class="icon-text"><i class="fas fa-sun"></i> Mostly sunny</div>
+        `;
+      updateLocationsList();
+    }
+  </script>
+  <script>
+    function updateMap() {
+      map.eachLayer(layer => {
+        if (layer instanceof L.Marker || layer instanceof L.Routing.Control) {
+          map.removeLayer(layer);
+        }
+      });
+      routeControls.forEach(control => map.removeControl(control));
+      routeControls = [];
+      tripData.forEach((day, index) => {
+        const dayColor = `hsl(${(index * 360) / tripData.length}, 70%, 50%)`;
+        // Add marker for the day's origin
+        L.marker(day.location, {
+          icon: L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          })
+        }).addTo(map).bindPopup(`Day ${day.day} Origin`);
+        // Add markers for additional locations if they exist
+        day.locations.forEach(loc => {
+          L.marker(loc.coords, {
+            icon: L.divIcon({
+              className: 'custom-div-icon',
+              html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-weight: bold;">•</div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            })
+          }).addTo(map).bindPopup(loc.name);
+        });
+        // Create route from origin to next day's origin or through locations
+        let waypoints = [L.latLng(day.location)];
+        if (day.locations.length > 0) {
+          waypoints = waypoints.concat(day.locations.map(loc => L.latLng(loc.coords)));
+        }
+        if (index < tripData.length - 1) {
+          waypoints.push(L.latLng(tripData[index + 1].location));
+        }
+        if (waypoints.length > 1) {
+          const routeControl = L.Routing.control({
+            waypoints: waypoints,
+            routeWhileDragging: false,
+            lineOptions: {
+              styles: [{
+                color: dayColor,
+                opacity: 0.7,
+                weight: 5
+              }]
+            },
+            createMarker: function() {
+              return null;
+            },
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: false,
+            showAlternatives: false
+          }).addTo(map);
+          routeControl.hide();
+          routeControls.push(routeControl);
+        }
+      });
+      // Set view to current day's location
+      map.setView(currentDay.location, 12);
+      // Show current day's route
+      const currentDayIndex = tripData.findIndex(day => day.day === currentDay.day);
+      if (currentDayIndex !== -1 && routeControls[currentDayIndex]) {
+        routeControls[currentDayIndex].show(true);
+      }
+    }
+
+    function updateLocationsList() {
+      const locationsList = document.getElementById('locationsList');
+      locationsList.innerHTML = '';
+      currentDay.locations.forEach((loc, index) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
+        a.target = '_blank';
+        a.textContent = loc.name;
+        const coords = document.createElement('span');
+        coords.className = 'location-coordinates';
+        coords.textContent = `(${loc.coords[0].toFixed(4)}, ${loc.coords[1].toFixed(4)})`;
+        li.appendChild(a);
+        li.appendChild(coords);
+        if (isRemovingLocations) {
+          const removeBtn = document.createElement('span');
+          removeBtn.className = 'remove-location';
+          removeBtn.textContent = ' ❌';
+          removeBtn.onclick = () => removeLocation(index);
+          li.appendChild(removeBtn);
+        }
+        locationsList.appendChild(li);
+      });
+      document.getElementById('origin').value = `${currentDay.location[0].toFixed(4)}, ${currentDay.location[1].toFixed(4)}`;
     }
 
     function editActivities() {
       const activitiesDiv = document.getElementById('activities');
       const currentActivities = currentDay.activities.join('\n');
       activitiesDiv.innerHTML = `
-                <h3>ערוך פעילויות ליום ${currentDay.day} (${currentDay.date}):</h3>
-                <textarea id="editActivitiesArea" class="edit-area">${currentActivities}</textarea>
-                <button class="edit-button" onclick="saveActivities()">שמור פעילויות</button>
-            `;
+    <h3>Edit Day ${currentDay.day} (${currentDay.date}) Activities:</h3>
+    <textarea id="editActivitiesArea" class="edit-area">${currentActivities}</textarea>
+    <button class="edit-button" onclick="saveActivities()">Save Activities</button>
+  `;
     }
 
     function saveActivities() {
       const editedActivities = document.getElementById('editActivitiesArea').value.split('\n').filter(activity => activity.trim() !== '');
       currentDay.activities = editedActivities;
       showDay(currentDay);
-    }
-
-    function initMap() {
-      tripData.forEach((day, index) => {
-        const marker = L.marker(day.location, {
-          icon: L.divIcon({
-            className: 'custom-div-icon',
-            html: `<div style="background-color: #3498db; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-          })
-        }).addTo(map);
-        marker.bindPopup(`<b>יום ${day.day}: ${day.date}</b><br>${day.activities[0]}`);
-        markers.push(marker);
-        if (index > 0) {
-          const previousDay = tripData[index - 1];
-          L.polyline([previousDay.location, day.location], {
-            color: '#3498db',
-            weight: 4,
-            opacity: 0.7
-          }).addTo(map);
-        }
-      });
     }
 
     function openInGoogleMaps(query) {
@@ -602,18 +761,44 @@
     }
 
     function openWeatherWebsite(date) {
-      // Convert date to format expected by weather website (if needed)
-      const formattedDate = date.split('/').reverse().join('-'); // Assuming weather site uses YYYY-MM-DD
-      const weatherUrl = `https://www.accuweather.com`;
+      const formattedDate = date.split('/').reverse().join('-');
+      const weatherUrl = `https://www.accuweather.com/en/me/podgorica/298465/daily-weather-forecast/${formattedDate}`;
       window.open(weatherUrl, '_blank');
     }
+    document.getElementById('addLocationBtn').addEventListener('click', function() {
+      map.once('click', function(e) {
+        const locationName = prompt("Enter location name:");
+        if (locationName) {
+          currentDay.locations.push({
+            name: locationName,
+            coords: [e.latlng.lat, e.latlng.lng]
+          });
+          updateMap();
+          updateLocationsList();
+        }
+      });
+    });
+    document.getElementById('editOriginBtn').addEventListener('click', function() {
+      map.once('click', function(e) {
+        currentDay.location = [e.latlng.lat, e.latlng.lng];
+        updateMap();
+        updateLocationsList();
+      });
+    });
+    document.getElementById('removeLocationsBtn').addEventListener('click', function() {
+      isRemovingLocations = !isRemovingLocations;
+      this.textContent = isRemovingLocations ? 'Done Removing' : 'Remove Locations';
+      updateLocationsList();
+    });
+
+    function removeLocation(index) {
+      currentDay.locations.splice(index, 1);
+      updateMap();
+      updateLocationsList();
+    }
     createDayButtons();
-    initMap();
     showDay(tripData[0]); // Show first day by default
   </script>
 </body>
-
-</html>
-</head>
 
 </html>
