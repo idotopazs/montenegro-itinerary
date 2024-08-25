@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+
   <style>
     body,
     html {
@@ -27,10 +28,10 @@
     }
 
     #sidebar {
-      width: 400px;
+      width: 420px;
       padding: 20px;
       overflow-y: auto;
-      background-color: #fffff1;
+      background-color: #748D92;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       z-index: 1000;
     }
@@ -54,14 +55,15 @@
     .day-button {
       flex: 1 0 calc(25% - 10px);
       padding: 10px;
-      background-color: #3498db;
+      background-color: #4682B4;
       color: white;
       border: none;
       cursor: pointer;
       transition: all 0.3s ease;
       border-radius: 5px;
-      font-size: 14px;
+      font-size: 16px;
       text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2)
     }
 
     .day-button:hover {
@@ -71,19 +73,19 @@
 
     .day-button.active {
       background-color: #2c3e50;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.8);
     }
 
     .info-card {
-      background-color: #ffffff;
+      background-color: #D3D9D4;
       border-radius: 10px;
       padding: 20px;
       margin-bottom: 20px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
 
     .info-card h3 {
-      color: #3498db;
+      color: #2c3e50;
       margin-top: 0;
     }
 
@@ -97,20 +99,29 @@
     }
 
     .weather-info {
-      background-color: #ecf0f1;
-      padding: 15px;
+      background-color: #D3D9D4;
       border-radius: 10px;
-      margin-top: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
 
     .weather-info h3 {
-      color: #3498db;
+      color: #2c3e50;
+      margin-top: 0;
       cursor: pointer;
-      transition: color 0.3s ease;
+    }
+
+    .weather-infoul {
+      padding-left: 20px;
+      margin-bottom: 0;
+    }
+
+    .weather-info li {
+      margin-bottom: 10px;
     }
 
     .weather-info h3:hover {
-      color: #2980b9;
       text-decoration: underline;
     }
 
@@ -130,7 +141,7 @@
     .restaurant-card {
       background-color: #fff;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       padding: 15px;
       margin-bottom: 15px;
       transition: all 0.3s ease;
@@ -139,7 +150,7 @@
 
     .restaurant-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
     .restaurant-name {
@@ -159,18 +170,19 @@
     }
 
     .edit-button {
-      background-color: #2ecc71;
+      background-color: #40B5AD;
       color: white;
       border: none;
       padding: 5px 10px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       margin-top: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     .edit-button:hover {
-      background-color: #27ae60;
+      background-color: #008080;
     }
 
     .edit-area {
@@ -189,8 +201,8 @@
     }
 
     #locationsList {
-      list-style-type: none;
-      padding-left: 0;
+      list-style-type: upper-roman;
+      padding-left: 10px;
     }
 
     #locationsList li {
@@ -198,7 +210,7 @@
     }
 
     #locationsList a {
-      color: #3498db;
+      color: #2c3e50;
       text-decoration: none;
     }
 
@@ -207,48 +219,61 @@
     }
 
     #addLocationBtn {
-      background-color: #3498db;
+      background-color: #4682B4;
       color: white;
       border: none;
       padding: 5px 10px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       margin-top: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     #editOriginBtn {
-      background-color: #2ecc71;
+      background-color: #40B5AD;
       color: white;
       border: none;
       padding: 5px 10px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       margin-top: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     #removeLocationsBtn {
-      background-color: #3498db;
+      background-color: #FF5733;
       color: white;
       border: none;
       padding: 5px 10px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       margin-top: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     #editOriginBtn:hover {
-      background-color: #27ae60
+      background-color: #008080
     }
 
     #removeLocationsBtn:hover {
-      background-color: #2980b9;
+      background-color: #A52A2A;
     }
 
     #addLocationBtn:hover {
-      background-color: #2980b9;
+      background-color: #2c3e50;
+    }
+
+    #origin {
+      background-color: #D3D9D4;
+      color: black;
+      border: none;
+      padding: flex;
+      margin-right: 1px;
+      cursor: pointer;
+      font-size: 14px;
     }
 
     @media (max-width: 768px) {
@@ -286,7 +311,6 @@
       <h2>Montenegro Trip Explorer</h2>
       <div class="day-buttons" id="dayButtons"></div>
       <div class="info-card" id="activities"></div>
-      <div class="info-card" id="restaurants"></div>
       <div class="info-card" id="locations">
         <h3>Locations</h3>
         <div id="originInput">
@@ -298,7 +322,11 @@
         <button id="addLocationBtn">Add Location</button>
         <button id="removeLocationsBtn">Remove Locations</button>
       </div>
+
       <div class="weather-info" id="weatherInfo"></div>
+
+      <div class="info-card" id="restaurants"></div>
+
     </div>
     <div id="map"></div>
   </div>
@@ -633,7 +661,7 @@
       const randomHumidity = Math.floor(Math.random() * 30) + 50;
       weatherInfo.innerHTML = `
             <h3 onclick="openWeatherWebsite('${day.date}')">Weather Forecast for ${day.date}</h3>
-            <div class="icon-text"><i class="fas fa-thermometer-half"></i> Temperature: ${randomTemp}°C</div>
+            <div class="icon-text"><i class="fas fa-thermometer-half"></i>  Temperature: ${randomTemp}°C</div>
             <div class="icon-text"><i class="fas fa-tint"></i> Humidity: ${randomHumidity}%</div>
             <div class="icon-text"><i class="fas fa-sun"></i> Mostly sunny</div>
         `;
