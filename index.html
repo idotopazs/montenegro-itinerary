@@ -338,7 +338,12 @@
         <button id="addLocationBtn">Add Location</button>
         <button id="removeLocationsBtn">Remove Locations</button>
       </div>
-      <div class="weather-info" id="weatherInfo"></div>
+     <div id="weatherInfo" class="weather-info">
+  <h3>Weather Forecast for <span id="weatherDate"></span></h3>
+  <p><span id="weatherIcon"></span> Temperature: <span id="temperature"></span>°C</p>
+  <p>💧 Humidity: <span id="humidity"></span>%</p>
+  <p>☀️ <span id="weatherCondition"></span></p>
+</div>
       <div class="Recommended-Restaurants-info" id="restaurants"></div>
     </div>
     <div id="map"></div>
@@ -366,76 +371,88 @@
       routeControls = [],
       isRemovingLocations = false;
     const openRouteServiceApiKey = '5b3ce3597851110001cf6248c50123909d9a458db7d4a37dcdc1c22b'; // Make sure this is correct
+   
+    
+    const API_KEY = '2be03c1bd6f3f4edeab87cfdafe723b3'; // Replace with your actual OpenWeatherMap API key
     let routeCache = {};
-
-    function loadFromFirebase() {
-      Promise.all([
-          database.ref('tripData').once('value'),
-          database.ref('routeCache').once('value')
-        ])
-        .then(([tripDataSnapshot, routeCacheSnapshot]) => {
-          console.log("Firebase snapshot:", tripDataSnapshot.val());
-          if (tripDataSnapshot.exists()) {
-            tripData = tripDataSnapshot.val();
-            if (!Array.isArray(tripData) || tripData.length === 0) {
-              console.error("Invalid data structure in Firebase:", tripData);
-              throw new Error("Invalid data structure in Firebase");
-            }
-          } else {
-            console.log("No trip data in Firebase, initializing with default data");
-            tripData = getDefaultTripData();
-          }
-          if (routeCacheSnapshot.exists()) {
-            routeCache = routeCacheSnapshot.val();
-            console.log("Route cache loaded from Firebase:", routeCache);
-          } else {
-            console.log("No route cache in Firebase, initializing empty cache");
-            routeCache = {};
-          }
-          initializeApp();
-          saveToFirebase(); // Save initial data if it was just created
-        })
-        .catch((error) => {
-          console.error("Detailed error loading data from Firebase:", error);
-          tripData = getDefaultTripData();
-          routeCache = {};
-          initializeApp();
-          saveToFirebase(); // Save initial data
-        });
-    }
-
-    function saveToFirebase() {
-      Promise.all([
-          database.ref('tripData').set(tripData),
-          database.ref('routeCache').set(routeCache)
-        ])
-        .then(() => {
-          console.log("Data and route cache saved successfully to Firebase");
-        })
-        .catch((error) => {
-          console.error("Error saving data to Firebase:", error);
-        });
-    }
-
-    function initializeApp() {
-      console.log("Initializing app with tripData:", tripData);
-      if (Array.isArray(tripData) && tripData.length > 0 && tripData[0].day) {
-        createDayButtons();
-        initializeMap();
-        showDay(tripData[0]);
-        // Fit the map to show all locations
-        const allLocations = tripData.flatMap(day => [day.location, ...(day.locations || []).map(loc => loc.coords)]).filter(loc => loc);
-        if (allLocations.length > 0) {
-          map.fitBounds(L.latLngBounds(allLocations));
-        }
-      } else {
-        console.error("Invalid tripData structure:", tripData);
-        tripData = getDefaultTripData();
-        createDayButtons();
-        initializeMap();
-        showDay(tripData[0]);
+   function loadFromFirebase() {
+  console.log("Starting to load data from Firebase");
+  Promise.all([
+    database.ref('tripData').once('value'),
+    database.ref('routeCache').once('value')
+  ])
+  .then(([tripDataSnapshot, routeCacheSnapshot]) => {
+    console.log("Firebase tripData snapshot:", tripDataSnapshot.val());
+    console.log("Firebase routeCache snapshot:", routeCacheSnapshot.val());
+    
+    if (tripDataSnapshot.exists()) {
+      tripData = tripDataSnapshot.val();
+      if (!Array.isArray(tripData) || tripData.length === 0) {
+        console.error("Invalid data structure in Firebase:", tripData);
+        throw new Error("Invalid data structure in Firebase");
       }
+    } else {
+      console.log("No trip data in Firebase, initializing with default data");
+      tripData = getDefaultTripData();
     }
+    
+   if (routeCacheSnapshot.exists()) {
+  const loadedCache = routeCacheSnapshot.val();
+  routeCache = {};
+  // Convert loaded cache keys to the new format
+  Object.keys(loadedCache).forEach(key => {
+    const newKey = key.replace(/_/g, '.').split('|').map(coord => coord.replace('_', ',')).join('|');
+    routeCache[newKey] = loadedCache[key];
+  });
+  console.log("Route cache loaded and converted from Firebase:", routeCache);
+} else {
+  console.log("No route cache in Firebase, initializing empty cache");
+  routeCache = {};
+}
+    
+    console.log("Final routeCache after loading:", routeCache);
+    initializeApp();
+  })
+  .catch((error) => {
+    console.error("Detailed error loading data from Firebase:", error);
+    tripData = getDefaultTripData();
+    routeCache = {};
+    initializeApp();
+  });
+}
+
+   function saveToFirebase() {
+  Promise.all([
+    database.ref('tripData').set(tripData),
+    database.ref('routeCache').set(routeCache)
+  ])
+  .then(() => {
+    console.log("Data and route cache saved successfully to Firebase");
+  })
+  .catch((error) => {
+    console.error("Error saving data to Firebase:", error);
+  });
+}
+function initializeApp() {
+  console.log("Initializing app with tripData:", tripData);
+  console.log("Initial routeCache state:", routeCache);
+  if (Array.isArray(tripData) && tripData.length > 0 && tripData[0].day) {
+    createDayButtons();
+    initializeMap();
+    showDay(tripData[0]);
+    // Fit the map to show all locations
+    const allLocations = tripData.flatMap(day => [day.location, ...(day.locations || []).map(loc => loc.coords)]).filter(loc => loc);
+    if (allLocations.length > 0) {
+      map.fitBounds(L.latLngBounds(allLocations));
+    }
+  } else {
+    console.error("Invalid tripData structure:", tripData);
+    tripData = getDefaultTripData();
+    createDayButtons();
+    initializeMap();
+    showDay(tripData[0]);
+  }
+}
 
     function initializeMap() {
       map = L.map('map').setView([42.7087, 19.3744], 11);
@@ -480,140 +497,150 @@
       });
     }
 
-    function showDay(day) {
-      if (!day) {
-        console.error('Invalid day data:', day);
-        return;
-      }
-      currentDay = day;
-      document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
-      const activeButton = document.querySelector(`.day-button:nth-child(${day.day})`);
-      if (activeButton) {
-        activeButton.classList.add('active');
-      }
-      updateMap();
-      updateActivities();
-      updateRestaurants();
-      updateWeather();
-      updateLocationsList();
-    }
+  function showDay(day) {
+  if (!day) {
+    console.error('Invalid day data:', day);
+    return;
+  }
+  currentDay = day;
+  document.querySelectorAll('.day-button').forEach(btn => btn.classList.remove('active'));
+  const activeButton = document.querySelector(`.day-button:nth-child(${day.day})`);
+  if (activeButton) {
+    activeButton.classList.add('active');
+  }
+  updateMap();
+  updateActivities();
+  updateRestaurants();
+  updateWeather(day.date, day.location[0], day.location[1]); // Pass latitude and longitude directly
+  updateLocationsList();
+}
 
     function getRouteFromCache(waypoints) {
-      const cacheKey = waypoints.map(wp => wp.join(',')).join('|');
+      const cacheKey = waypoints.map(wp => `${wp[0].toFixed(6)}.${wp[1].toFixed(6)}`).join('|');
       return routeCache[cacheKey];
     }
+  function generateCacheKey(waypoints) {
+  return waypoints.map(wp => `${wp[0].toFixed(6)}.${wp[1].toFixed(6)}`).join('|');
+}
 
     function updateMap() {
-      map.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-          map.removeLayer(layer);
-        }
-      });
-      let routesToFetch = [];
-      tripData.forEach((day, index) => {
-        const dayColor = `hsl(${(day.day * 360) / tripData.length}, 70%, 50%)`;
-        // Add marker for the day's origin
-        if (day.location) {
-          L.marker(day.location, {
-            icon: L.divIcon({
-              className: 'custom-div-icon',
-              html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
-              iconSize: [30, 30],
-              iconAnchor: [15, 15]
-            })
-          }).addTo(map).bindPopup(`Day ${day.day} Origin`);
-        }
-        // Add markers for additional locations
-        if (day.locations && Array.isArray(day.locations)) {
-          day.locations.forEach(loc => {
-            if (loc.coords) {
-              L.marker(loc.coords, {
-                icon: L.divIcon({
-                  className: 'custom-div-icon',
-                  html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-weight: bold;">•</div>`,
-                  iconSize: [20, 20],
-                  iconAnchor: [10, 10]
-                })
-              }).addTo(map).bindPopup(loc.name || 'Unnamed Location');
-            }
-          });
-        }
-        // Create route
-        let waypoints = [];
-        if (day.location) {
-          waypoints.push(day.location);
-        }
-        if (day.locations && Array.isArray(day.locations)) {
-          waypoints = waypoints.concat(day.locations.filter(loc => loc.coords).map(loc => loc.coords));
-        }
-        if (index < tripData.length - 1 && tripData[index + 1].location) {
-          waypoints.push(tripData[index + 1].location);
-        }
-        if (waypoints.length > 1) {
-          const cacheKey = waypoints.map(wp => wp.join(',')).join('|');
-          if (routeCache[cacheKey]) {
-            drawRoute(routeCache[cacheKey], dayColor);
-          } else {
-            routesToFetch.push({
-              waypoints,
-              dayColor,
-              cacheKey
-            });
-          }
-        }
-      });
-      // Fetch routes that are not in cache
-      if (routesToFetch.length > 0) {
-        fetchRoutes(routesToFetch);
-      }
-      // Set view to the current day's location with a fixed zoom level
-      if (currentDay.location) {
-        map.setView(currentDay.location, 11);
-      }
+  console.log("Starting updateMap. Current routeCache:", routeCache);
+  map.eachLayer(layer => {
+    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+      map.removeLayer(layer);
+    }
+  });
+
+  tripData.forEach((day, index) => {
+    const dayColor = `hsl(${(day.day * 360) / tripData.length}, 70%, 50%)`;
+    
+    // Add marker for the day's origin
+    if (day.location) {
+      L.marker(day.location, {
+        icon: L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(map).bindPopup(`Day ${day.day} Origin`);
     }
 
+    // Add markers for additional locations
+    if (day.locations && Array.isArray(day.locations)) {
+      day.locations.forEach(loc => {
+        if (loc.coords) {
+          L.marker(loc.coords, {
+            icon: L.divIcon({
+              className: 'custom-div-icon',
+              html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-weight: bold;">•</div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            })
+          }).addTo(map).bindPopup(loc.name || 'Unnamed Location');
+        }
+      });
+    }
+
+    // Create route
+    let waypoints = [];
+    if (day.location) {
+      waypoints.push(day.location);
+    }
+    if (day.locations && Array.isArray(day.locations)) {
+      waypoints = waypoints.concat(day.locations.filter(loc => loc.coords).map(loc => loc.coords));
+    }
+    if (index < tripData.length - 1 && tripData[index + 1].location) {
+      waypoints.push(tripData[index + 1].location);
+    }
+
+   if (waypoints.length > 1) {
+  const cacheKey = generateCacheKey(waypoints);
+  console.log("Attempting to draw route for:", cacheKey);
+  console.log("Cache keys:", Object.keys(routeCache));
+  if (routeCache[cacheKey]) {
+    console.log("Using cached route for:", cacheKey);
+    drawRoute(routeCache[cacheKey], dayColor);
+  } else {
+    console.log("Cache miss, fetching route for:", cacheKey);
+    fetchRoute(waypoints, dayColor, cacheKey);
+  }
+}
+  });
+
+  // Set view to the current day's location with a fixed zoom level
+  if (currentDay.location) {
+    map.setView(currentDay.location, 11);
+  }
+}
     function fetchRoutes(routesToFetch) {
       routesToFetch.forEach(route => {
         fetchRoute(route.waypoints, route.dayColor, route.cacheKey);
       });
     }
 
-    function fetchRoute(waypoints, color, cacheKey) {
-      const body = JSON.stringify({
-        coordinates: waypoints.map(wp => [wp[1], wp[0]])
-      });
-      fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
-            'Content-Type': 'application/json',
-            'Authorization': openRouteServiceApiKey
-          },
-          body: body
-        })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          if (data.features && data.features.length > 0) {
-            const route = data.features[0].geometry.coordinates;
-            routeCache[cacheKey] = route;
-            drawRoute(route, color);
-            // Save only the updated route to Firebase
-            database.ref('routeCache/' + cacheKey.replace(/[.#$[\]]/g, '_')).set(route)
-              .then(() => console.log("Route cache updated in Firebase"))
-              .catch(error => console.error("Error updating route cache in Firebase:", error));
-          } else {
-            console.error('No route found in the response:', data);
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching route:', error);
-        });
-    }
+ function fetchRoute(waypoints, color, cacheKey) {
+  if (!routeCache[cacheKey]) {
+    console.log("Cache miss. Fetching route from API for:", cacheKey);
+    const body = JSON.stringify({
+      coordinates: waypoints.map(wp => [wp[1], wp[0]])
+    });
+    fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+        'Content-Type': 'application/json',
+        'Authorization': openRouteServiceApiKey
+      },
+      body: body
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.features && data.features.length > 0) {
+        const route = data.features[0].geometry.coordinates;
+        routeCache[cacheKey] = route;
+        drawRoute(route, color);
+        // Save only the updated route to Firebase
+       database.ref('routeCache/' + cacheKey.replace(/[.,]/g, '_')).set(route)
+  .then(() => console.log("Route cache updated in Firebase for:", cacheKey))
+  .catch(error => console.error("Error updating route cache in Firebase:", error));
+      } else {
+        console.error('No route found in the response:', data);
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching route:', error);
+    });
+  } else {
+    console.log("Using cached route for:", cacheKey);
+    drawRoute(routeCache[cacheKey], color);
+  }
+}
 
     function saveRouteCache() {
       database.ref('routeCache').set(routeCache)
@@ -630,11 +657,11 @@
     }
 
     function clearRouteCache() {
-      routeCache = {};
-      database.ref('routeCache').remove()
-        .then(() => console.log("Route cache cleared from Firebase"))
-        .catch(error => console.error("Error clearing route cache from Firebase:", error));
-    }
+  routeCache = {};
+  database.ref('routeCache').remove()
+    .then(() => console.log("Route cache cleared from Firebase"))
+    .catch(error => console.error("Error clearing route cache from Firebase:", error));
+}
 
     function updateActivities() {
       const activitiesDiv = document.getElementById('activities');
@@ -663,17 +690,60 @@
             `).join('');
     }
 
-    function updateWeather() {
-      const weatherInfo = document.getElementById('weatherInfo');
-      const randomTemp = Math.floor(Math.random() * 10) + 20;
-      const randomHumidity = Math.floor(Math.random() * 30) + 50;
-      weatherInfo.innerHTML = `
-            <h3 onclick="openWeatherWebsite('${currentDay.date}')">Weather Forecast for ${currentDay.date}</h3>
-            <div class="icon-text"><i class="fas fa-thermometer-half"></i>  Temperature: ${randomTemp}°C</div>
-            <div class="icon-text"><i class="fas fa-tint"></i> Humidity: ${randomHumidity}%</div>
-            <div class="icon-text"><i class="fas fa-sun"></i> Mostly sunny</div>
-        `;
-    }
+ function updateWeather(date, lat, lon) {
+  const weatherDate = document.getElementById('weatherDate');
+  const temperature = document.getElementById('temperature');
+  const humidity = document.getElementById('humidity');
+  const weatherCondition = document.getElementById('weatherCondition');
+  const weatherIcon = document.getElementById('weatherIcon');
+
+  weatherDate.textContent = date;
+
+  fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&APPID=${API_KEY}&units=metric`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.main && data.main.temp) {
+        temperature.textContent = Math.round(data.main.temp);
+        humidity.textContent = data.main.humidity;
+        weatherCondition.textContent = data.weather[0].description;
+        weatherIcon.textContent = getWeatherIcon(data.weather[0].icon);
+      } else {
+        throw new Error('Weather data is incomplete');
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching weather data:', error);
+      displayWeatherError();
+    });
+}
+
+function displayWeatherError() {
+  const weatherDate = document.getElementById('weatherDate');
+  const temperature = document.getElementById('temperature');
+  const humidity = document.getElementById('humidity');
+  const weatherCondition = document.getElementById('weatherCondition');
+  const weatherIcon = document.getElementById('weatherIcon');
+
+  temperature.textContent = '❓';
+  humidity.textContent = '❓';
+  weatherCondition.textContent = 'Weather data unavailable';
+  weatherIcon.textContent = '❓';
+}
+function getWeatherIcon(iconCode) {
+    const iconMap = {
+        '01d': '☀️', '01n': '🌙', '02d': '⛅', '02n': '☁️',
+        '03d': '☁️', '03n': '☁️', '04d': '☁️', '04n': '☁️',
+        '09d': '🌧️', '09n': '🌧️', '10d': '🌦️', '10n': '🌧️',
+        '11d': '⛈️', '11n': '⛈️', '13d': '❄️', '13n': '❄️',
+        '50d': '🌫️', '50n': '🌫️'
+    };
+    return iconMap[iconCode] || '☁️';
+}
 
     function updateLocationsList() {
       const locationsList = document.getElementById('locationsList');
@@ -755,14 +825,15 @@
       });
     });
     document.getElementById('editOriginBtn').addEventListener('click', function() {
-      map.once('click', function(e) {
-        currentDay.location = [e.latlng.lat, e.latlng.lng];
-        clearRouteCache();
-        updateMap();
-        updateLocationsList();
-        saveToFirebase();
-      });
-    });
+  map.once('click', function(e) {
+    currentDay.location = [e.latlng.lat, e.latlng.lng];
+    clearRouteCache();
+    updateMap();
+    updateLocationsList();
+    updateWeather(currentDay.date, e.latlng.lat, e.latlng.lng); // Update weather with new coordinates
+    saveToFirebase();
+  });
+});
     document.getElementById('removeLocationsBtn').addEventListener('click', function() {
       isRemovingLocations = !isRemovingLocations;
       this.textContent = isRemovingLocations ? 'Done Removing' : 'Remove Locations';
@@ -786,6 +857,17 @@
           console.error("Error fetching trip data:", error);
         });
     }
+    //function deleteFirebaseCache() {
+ // console.log("Attempting to delete Firebase cache...");
+  //database.ref('routeCache').remove()
+   // .then(() => {
+    //  console.log("Firebase cache successfully deleted");
+    //  routeCache = {}; // Clear the local cache as well
+   // })
+   // .catch((error) => {
+    //  console.error("Error deleting Firebase cache:", error);
+   // });
+//}
 
     function getDefaultTripData() {
       // Return your default trip data here
@@ -817,7 +899,13 @@
         // ... other days ...
       ];
     }
-    // Initialize the application
+   document.addEventListener('DOMContentLoaded', () => {
+  if (tripData && tripData.length > 0) {
+    const firstDay = tripData[0];
+    const cityName = firstDay.location[2] || firstDay.location || 'Unknown';
+    updateWeather(firstDay.date, cityName);
+  }
+});
     loadFromFirebase();
     logTripData();
   </script>
