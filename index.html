@@ -387,18 +387,20 @@
           }
           if (routeCacheSnapshot.exists()) {
             routeCache = routeCacheSnapshot.val();
-            console.log("Route cache loaded from Firebase");
+            console.log("Route cache loaded from Firebase:", routeCache);
           } else {
-            routeCache = {};
             console.log("No route cache in Firebase, initializing empty cache");
+            routeCache = {};
           }
           initializeApp();
+          saveToFirebase(); // Save initial data if it was just created
         })
         .catch((error) => {
           console.error("Detailed error loading data from Firebase:", error);
           tripData = getDefaultTripData();
           routeCache = {};
           initializeApp();
+          saveToFirebase(); // Save initial data
         });
     }
 
@@ -600,7 +602,10 @@
             const route = data.features[0].geometry.coordinates;
             routeCache[cacheKey] = route;
             drawRoute(route, color);
-            saveRouteCache();
+            // Save only the updated route to Firebase
+            database.ref('routeCache/' + cacheKey.replace(/[.#$[\]]/g, '_')).set(route)
+              .then(() => console.log("Route cache updated in Firebase"))
+              .catch(error => console.error("Error updating route cache in Firebase:", error));
           } else {
             console.error('No route found in the response:', data);
           }
@@ -731,25 +736,24 @@
       const weatherUrl = `https://www.accuweather.com/en/me/podgorica/298465/daily-weather-forecast/${formattedDate}`;
       window.open(weatherUrl, '_blank');
     }
-     document.getElementById('addLocationBtn').addEventListener('click', function() {
-    map.once('click', function(e) {
-      const locationName = prompt("Enter location name:");
-      if (locationName) {
-        if (!currentDay.locations) {
-          currentDay.locations = [];
+    document.getElementById('addLocationBtn').addEventListener('click', function() {
+      map.once('click', function(e) {
+        const locationName = prompt("Enter location name:");
+        if (locationName) {
+          if (!currentDay.locations) {
+            currentDay.locations = [];
+          }
+          currentDay.locations.push({
+            name: locationName,
+            coords: [e.latlng.lat, e.latlng.lng]
+          });
+          clearRouteCache();
+          updateMap();
+          updateLocationsList();
+          saveToFirebase();
         }
-        currentDay.locations.push({
-          name: locationName,
-          coords: [e.latlng.lat, e.latlng.lng]
-        });
-        clearRouteCache();
-        updateMap();
-        updateLocationsList();
-        saveToFirebase();
-      }
+      });
     });
-  });
-
     document.getElementById('editOriginBtn').addEventListener('click', function() {
       map.once('click', function(e) {
         currentDay.location = [e.latlng.lat, e.latlng.lng];
