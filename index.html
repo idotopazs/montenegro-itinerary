@@ -370,7 +370,9 @@
     let map, currentDay, currentMarker, currentRoute, markers = [],
       routeControls = [],
       isRemovingLocations = false;
-    const openRouteServiceApiKey = '5b3ce3597851110001cf6248c50123909d9a458db7d4a37dcdc1c22b'; // Make sure this is correct
+    
+    //const openRouteServiceApiKey = '5b3ce3597851110001cf6248c50123909d9a458db7d4a37dcdc1c22b';
+    const openRouteServiceApiKey = '5b3ce3597851110001cf6248ace5e01ba6d9422197bb9f60656279cf';
    
     
     const API_KEY = '2be03c1bd6f3f4edeab87cfdafe723b3'; // Replace with your actual OpenWeatherMap API key
@@ -758,7 +760,7 @@ function getWeatherIcon(iconCode) {
             a.textContent = loc.name || 'Unnamed Location';
             const coords = document.createElement('span');
             coords.className = 'location-coordinates';
-            coords.textContent = `(${loc.coords[0].toFixed(4)}, ${loc.coords[1].toFixed(4)})`;
+           //coords.textContent = `(${loc.coords[0].toFixed(4)}, ${loc.coords[1].toFixed(4)})`;
             li.appendChild(a);
             li.appendChild(coords);
             if (isRemovingLocations) {
