@@ -240,6 +240,7 @@
 
     #addLocationBtn,
     #editOriginBtn,
+    #editLocationsBtn,
     #removeLocationsBtn {
       background-color: #4682B4;
       color: white;
@@ -271,17 +272,26 @@
     #addLocationBtn:hover {
       background-color: #2c3e50;
     }
+    
+    #editLocationsBtn{
+      background-color: #40B5AD;
+    }
+     #editLocationsBtn:hover{
+      background-color: #008080;
+    }
 
     #origin {
       background-color: #D3D9D4;
-      color: black;
+      
       border: none;
-      padding: 5px;
-      cursor: pointer;
+      padding: 1px;
+      color: black;
+      text-decoration: none;
       font-size: 16px;
-      width: 100%;
+      width: auto;
       margin-bottom: 10px;
     }
+    
 
     @media (max-width: 768px) {
       #container {
@@ -328,21 +338,23 @@
       <h2>Montenegro Trip Explorer</h2>
       <div class="day-buttons" id="dayButtons"></div>
       <div class="info-card" id="activities"></div>
-      <div class="info-card" id="locations">
-        <h3>Locations</h3>
-        <div id="originInput">
-          <label for="origin">Origin:</label>
-          <input type="text" id="origin" placeholder="Enter origin location" readonly>
-          <button id="editOriginBtn">Edit Origin</button>
-        </div>
-        <ul id="locationsList"></ul>
-        <button id="addLocationBtn">Add Location</button>
-        <button id="removeLocationsBtn">Remove Locations</button>
-      </div>
+     <div class="info-card" id="locations">
+  <h3>Locations <button id="addLocationBtn">Add Location</button></h3>
+  <div id="originInput">
+    <label for="origin">Origin:</label>
+    <input type="text" id="origin" placeholder="Enter origin location" readonly>
+    <button id="editOriginBtn">Edit Origin</button>
+  </div>
+  <ul id="locationsList"></ul>
+  <div id="locationButtons">
+    <button id="editLocationsBtn">Edit Locations</button>
+    <button id="removeLocationsBtn">Remove Locations</button>    
+  </div>
+</div>
      <div id="weatherInfo" class="weather-info">
   <h3>Weather Forecast for <span id="weatherDate"></span></h3>
   <p><span id="weatherIcon"></span> Temperature: <span id="temperature"></span>°C</p>
-  <p>💧 Humidity: <span id="humidity"></span>%</p>
+  <p> 💧  Humidity: <span id="humidity"></span>%</p>
   <p>☀️ <span id="weatherCondition"></span></p>
 </div>
       <div class="Recommended-Restaurants-info" id="restaurants"></div>
@@ -351,6 +363,7 @@
   </div>
 
   <script>
+    let isEditingLocations = false;
     // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyB_R7X8LmunLg0gQCi43QtX1zRpivj0Eyc",
@@ -465,6 +478,7 @@ function initializeApp() {
       let currentDay = null;
       let routeControls = [];
       let isRemovingLocations = false;
+      let isEditingLocations = false;
       // Define the base layers using Esri tile layers
       const streets = L.esri.basemapLayer('Streets');
       const satellite = L.esri.basemapLayer('Imagery');
@@ -542,7 +556,32 @@ function initializeApp() {
       L.marker(day.location, {
         icon: L.divIcon({
           className: 'custom-div-icon',
-          html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold;">${day.day}</div>`,
+          html: ` <div style="
+        background-color: ${dayColor};
+        border-radius: 50% 50% 50% 0;
+        border: 2px solid black;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transform: rotate(-45deg);
+        position: relative;
+    ">
+        <span style="
+            transform: rotate(45deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            border: 2px solid black;
+            border-radius: 50%;
+        ">${day.day}</span>`,
           iconSize: [30, 30],
           iconAnchor: [15, 15]
         })
@@ -556,7 +595,26 @@ function initializeApp() {
           L.marker(loc.coords, {
             icon: L.divIcon({
               className: 'custom-div-icon',
-              html: `<div style="background-color:${dayColor}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-weight: bold;">•</div>`,
+              html: `<div style="
+        background-color: ${dayColor};
+        border-radius: 50% 50% 50% 0;
+        border: 2px solid black;
+        width: 15px;
+        height: 15px;
+        transform: rotate(-45deg);
+        position: relative;
+        overflow: hidden;
+    ">
+        <div style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 5px;
+            height: 5px;
+            background-color: white;
+            border-radius: 50%;
+        "></div>`,
               iconSize: [20, 20],
               iconAnchor: [10, 10]
             })
@@ -652,12 +710,20 @@ function initializeApp() {
     }
 
     function drawRoute(route, color) {
-      L.polyline(route.map(coord => [coord[1], coord[0]]), {
-        color: color,
-        weight: 5,
-        opacity: 0.7
-      }).addTo(map);
-    }
+  // Draw the border (black outline)
+  L.polyline(route.map(coord => [coord[1], coord[0]]), {
+    color: 'black',
+    weight: 7,  // Slightly larger than the main route
+    opacity: 0.7
+  }).addTo(map);
+
+  // Draw the main route
+  L.polyline(route.map(coord => [coord[1], coord[0]]), {
+    color: color,
+    weight: 5,
+    opacity: 1
+  }).addTo(map);
+}
 
     function clearRouteCache() {
   routeCache = {};
@@ -756,7 +822,13 @@ function getWeatherIcon(iconCode) {
           if (loc.coords) {
             const li = document.createElement('li');
             const a = document.createElement('a');
-            a.href = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
+            
+            if (loc.link) {
+          a.href = loc.link;
+        } else {
+          a.href = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
+        }
+            
             a.target = '_blank';
             a.textContent = loc.name || 'Unnamed Location';
             const coords = document.createElement('span');
@@ -764,13 +836,31 @@ function getWeatherIcon(iconCode) {
            //coords.textContent = `(${loc.coords[0].toFixed(4)}, ${loc.coords[1].toFixed(4)})`;
             li.appendChild(a);
             li.appendChild(coords);
-            if (isRemovingLocations) {
-              const removeBtn = document.createElement('span');
-              removeBtn.className = 'remove-location';
-              removeBtn.textContent = ' ❌';
-              removeBtn.onclick = () => removeLocation(index);
-              li.appendChild(removeBtn);
-            }
+              if (isRemovingLocations) {
+            const removeBtn = document.createElement('span');
+            removeBtn.className = 'remove-location';
+            removeBtn.textContent = ' ❌';
+            removeBtn.onclick = () => removeLocation(index);
+            li.appendChild(removeBtn);
+          } else if (isEditingLocations) {
+            const pinIcon = document.createElement('span');
+            pinIcon.className = 'edit-location-pin';
+            pinIcon.textContent = ' 📍';
+            pinIcon.style.cursor = 'pointer';
+            pinIcon.onclick = () => updateLocationCoordinates(index);
+
+            const linkIcon = document.createElement('span');
+            linkIcon.className = 'edit-location-link';
+            linkIcon.textContent = ' 🔗';
+            linkIcon.style.cursor = 'pointer';
+            linkIcon.onclick = (e) => {
+      e.stopPropagation(); // Prevent event from bubbling up
+      editLocationLink(index);
+    };
+
+            li.appendChild(pinIcon);
+            li.appendChild(linkIcon);
+          }
             locationsList.appendChild(li);
           }
         });
@@ -850,6 +940,41 @@ function getWeatherIcon(iconCode) {
       updateLocationsList();
       saveToFirebase();
     }
+    document.getElementById('editLocationsBtn').addEventListener('click', function() {
+    isEditingLocations = !isEditingLocations;
+    this.textContent = isEditingLocations ? 'Done Editing' : 'Edit Locations';
+    updateLocationsList();
+  });
+    function editLocationLink(index) {
+  const location = currentDay.locations[index];
+  const newLink = prompt(`Enter new link for ${location.name || 'this location'}:`, location.link || '');
+  
+  if (newLink !== null) {
+    location.link = newLink;
+    updateLocationsList();
+    saveToFirebase();
+  }
+}
+    let editingLocationIndex = null;
+
+function updateLocationCoordinates(index) {
+  editingLocationIndex = index;
+  alert('Click on the map to set the new location');
+  
+  // Enable map click listener
+  map.once('click', function(e) {
+    const newLat = e.latlng.lat;
+    const newLng = e.latlng.lng;
+    
+    currentDay.locations[editingLocationIndex].coords = [newLat, newLng];
+    editingLocationIndex = null;
+    
+    clearRouteCache();
+    updateMap();
+    updateLocationsList();
+    saveToFirebase();
+  });
+}
 
     function logTripData() {
       database.ref('tripData').once('value')
