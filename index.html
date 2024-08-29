@@ -50,15 +50,41 @@
       background-color: #748D92;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       z-index: 1000;
+      position: relative;
     }
 
     #map {
       flex-grow: 1;
     }
 
-    h2 {
+    .h2 {
       color: #2c3e50;
       margin-bottom: 20px;
+      margin-right: 100px
+    }
+
+    .mode-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 8px 10px;
+      background-color: #4682B4;
+      color: white;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    .mode-toggle:hover {
+      background-color: #2980b9;
+    }
+
+    .edit-button,
+    .remove-button,
+    .add-button {
+      display: inline-block;
     }
 
     .leaflet-routing-container {
@@ -189,9 +215,6 @@
       font-weight: bold;
     }
 
-  
-
-
     .edit-area {
       width: 100%;
       min-height: 100px;
@@ -242,13 +265,14 @@
       font-size: 16px;
       margin-top: 10px;
       margin-right: 5px;
-      margin-left:5px;
+      margin-left: 5px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
-    .edit-button{
+
+    .edit-button {
       background-color: #40B5AD;
     }
-    
+
     .edit-button:hover {
       background-color: #008080;
     }
@@ -356,37 +380,37 @@
   <div id="container">
     <div id="sidebar">
       <h2>Montenegro Trip Explorer</h2>
+      <button id="modeToggle" class="mode-toggle">Edit Mode</button>
       <div class="day-buttons" id="dayButtons"></div>
       <div class="info-card" id="activities"></div>
       <div class="info-card" id="locations">
-        <h3>Locations </h3>
+        <h3>Locations</h3>
         <div id="originInput">
           <label>Origin:</label>
-          <label id="origin" ></label>
-          <button id="editOriginBtn">Edit Origin</button>
-          <button id="addLocationBtn">Add Location</button>
+          <label id="origin"></label>
+          <button id="editOriginBtn" class="edit-button">Edit Origin</button>
+          <button id="addLocationBtn" class="add-button">Add Location</button>
         </div>
         <ul id="locationsList"></ul>
         <div id="locationButtons">
-          <button id="editLocationsBtn">Edit Locations</button>
-          <button id="removeLocationsBtn">Remove Locations</button>
+          <button id="editLocationsBtn" class="edit-button">Edit Locations</button>
+          <button id="removeLocationsBtn" class="remove-button">Remove Locations</button>
         </div>
       </div>
       <div id="accommodations" class="info-card">
-        <h3> Accommodations </h3>
-        <button id="addAccommodationBtn">Add Accommodation</button>
+        <h3>Accommodations</h3>
+        <button id="addAccommodationBtn" class="add-button">Add Accommodation</button>
         <ul id="accommodationList"></ul>
         <div id="accommodationButtons">
-          <button id="editAccommodationsBtn">Edit Accomm</button>
-          <button id="removeAccommodationsBtn">Remove Accomm</button>
+          <button id="editAccommodationsBtn" class="edit-button">Edit Accomm</button>
+          <button id="removeAccommodationsBtn" class="remove-button">Remove Accomm</button>
         </div>
       </div>
       <div id="weatherInfo" class="weather-info">
         <h3>Weather Forecast for <span id="weatherDate"></span></h3>
-        <p>🌡️ Temperature:  <span id="temperature"></span>°C </p>
+        <p>🌡️ Temperature: <span id="temperature"></span>°C</p>
         <p>💧 Humidity: <span id="humidity"></span>%</p>
-        <p><span id="weatherIcon" </span><span id="weatherCondition"></span></p>
-
+        <p><span id="weatherIcon"></span><span id="weatherCondition"></span></p>
       </div>
       <div class="Recommended-Restaurants-info" id="restaurants"></div>
     </div>
@@ -808,7 +832,7 @@
                 <ul id="activitiesList">
                     ${currentDay.activities.map(activity => `<li>${activity}</li>`).join('')}
                 </ul>
-                <button class="edit-button" onclick="editActivities()">Edit Activities</button>
+                <button class="edit-button"class="edit-button" onclick="editActivities()">Edit Activities</button>
             `;
     }
 
@@ -1021,6 +1045,7 @@
       this.textContent = isEditingLocations ? 'Done Editing' : 'Edit Locations';
       updateLocationsList();
     });
+    
 
     function editLocationLink(index) {
       const location = currentDay.locations[index];
@@ -1253,6 +1278,16 @@
           console.error("Error fetching trip data:", error);
         });
     }
+    const modeToggle = document.getElementById('modeToggle');
+    const editButtons = document.querySelectorAll('.edit-button, .remove-button, .add-button');
+    let editMode = true;
+    modeToggle.addEventListener('click', () => {
+      editMode = !editMode;
+      modeToggle.textContent = editMode ? 'Edit Mode' : 'View Mode';
+      editButtons.forEach(button => {
+        button.style.display = editMode ? 'inline-block' : 'none';
+      });
+    });
     //function deleteFirebaseCache() {
     // console.log("Attempting to delete Firebase cache...");
     //database.ref('routeCache').remove()
