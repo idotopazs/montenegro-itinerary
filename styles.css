@@ -1,0 +1,367 @@
+/* ========================================
+   CSS Variables (Custom Properties)
+   ======================================== */
+:root {
+  --primary-color: #4682B4;
+  --primary-hover: #2980b9;
+  --secondary-color: #40B5AD;
+  --secondary-hover: #008080;
+  --danger-color: #FF5733;
+  --danger-hover: #A52A2A;
+  --dark-gray: #2c3e50;
+  --light-gray: #f0f4f8;
+  --card-bg: #D3D9D4;
+  --sidebar-bg: #748D92;
+  --text-primary: #2c3e50;
+  --text-secondary: #34495e;
+  --text-muted: #7f8c8d;
+  --border-radius: 10px;
+  --transition-speed: 0.3s;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+body,
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--light-gray);
+}
+
+/* ========================================
+   Layout
+   ======================================== */
+#container {
+  display: flex;
+  height: 100%;
+}
+
+#sidebar {
+  width: 420px;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: var(--sidebar-bg);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  position: relative;
+}
+
+#map {
+  flex-grow: 1;
+}
+
+/* ========================================
+   Typography
+   ======================================== */
+.h2 {
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  margin-right: 100px;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+.mode-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 8px 10px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.mode-toggle:hover {
+  background-color: var(--primary-hover);
+}
+
+.day-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.day-button {
+  flex: 1 0 calc(25% - 10px);
+  padding: 10px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  border-radius: 5px;
+  font-size: 16px;
+  text-align: center;
+  box-shadow: var(--box-shadow);
+}
+
+.day-button:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.day-button.active {
+  background-color: var(--dark-gray);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.8);
+}
+
+.edit-button,
+#addLocationBtn,
+#editOriginBtn,
+#editLocationsBtn,
+#removeLocationsBtn,
+#addAccommodationBtn,
+#editAccommodationsBtn,
+#removeAccommodationsBtn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+  margin-right: 5px;
+  margin-left: 5px;
+  box-shadow: var(--box-shadow-hover);
+}
+
+.edit-button,
+#editOriginBtn,
+#editLocationsBtn,
+#editAccommodationsBtn {
+  background-color: var(--secondary-color);
+}
+
+.edit-button:hover,
+#editOriginBtn:hover,
+#editLocationsBtn:hover,
+#editAccommodationsBtn:hover {
+  background-color: var(--secondary-hover);
+}
+
+#removeLocationsBtn,
+#removeAccommodationsBtn {
+  background-color: var(--danger-color);
+}
+
+#removeLocationsBtn:hover,
+#removeAccommodationsBtn:hover {
+  background-color: var(--danger-hover);
+}
+
+#addLocationBtn:hover,
+#addAccommodationBtn:hover {
+  background-color: var(--dark-gray);
+}
+
+/* ========================================
+   Cards
+   ======================================== */
+.info-card {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--box-shadow);
+}
+
+.info-card h3 {
+  color: var(--text-primary);
+  margin-top: 0;
+}
+
+.info-card ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.info-card li {
+  margin-bottom: 10px;
+}
+
+/* ========================================
+   Weather Information
+   ======================================== */
+.weather-info {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--box-shadow);
+}
+
+.weather-info h3 {
+  color: var(--text-primary);
+  margin-top: 0;
+  cursor: pointer;
+}
+
+.weather-info h3:hover {
+  text-decoration: underline;
+}
+
+.icon-text {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  color: var(--text-secondary);
+}
+
+.icon-text i {
+  margin-right: 10px;
+  width: 20px;
+  color: #3498db;
+}
+
+/* ========================================
+   Restaurants
+   ======================================== */
+.Recommended-Restaurants-info {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--box-shadow);
+  overflow-y: auto;
+}
+
+.restaurant-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  margin-bottom: 15px;
+  transition: all var(--transition-speed) ease;
+  cursor: pointer;
+}
+
+.restaurant-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--box-shadow-hover);
+}
+
+.restaurant-name {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.restaurant-details {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.restaurant-rating {
+  color: #f39c12;
+  font-weight: bold;
+}
+
+/* ========================================
+   Forms & Inputs
+   ======================================== */
+.edit-area {
+  width: 100%;
+  min-height: 100px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+}
+
+#origin {
+  background-color: var(--card-bg);
+  border: none;
+  outline: none;
+  padding: 1px;
+  color: black;
+  text-decoration: none;
+  font-size: 16px;
+  width: auto;
+  margin-bottom: 10px;
+}
+
+/* ========================================
+   Locations
+   ======================================== */
+#locations {
+  margin-top: 20px;
+}
+
+#locationsList {
+  list-style-type: upper-roman;
+  padding-left: 10px;
+}
+
+#locationsList li {
+  margin-bottom: 5px;
+}
+
+#locationsList a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+#locationsList a:hover {
+  text-decoration: underline;
+}
+
+.location-coordinates {
+  font-size: 0.8em;
+  color: #777;
+  margin-left: 5px;
+}
+
+.remove-location {
+  color: red;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+/* ========================================
+   Map Styles
+   ======================================== */
+.leaflet-routing-container {
+  display: none !important;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+  #container {
+    flex-direction: column;
+  }
+
+  #sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: 40vh;
+    overflow-y: auto;
+    background-color: var(--sidebar-bg);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+
+  .day-button {
+    flex: 1 0 calc(30% - 10px);
+  }
+}
