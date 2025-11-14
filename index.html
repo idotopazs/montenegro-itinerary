@@ -421,15 +421,16 @@
     let isEditingLocations = false;
     // Firebase configuration
     const firebaseConfig = {
-      apiKey: "AIzaSyB_R7X8LmunLg0gQCi43QtX1zRpivj0Eyc",
-      authDomain: "monte-trip-explorer.firebaseapp.com",
-      databaseURL: "https://monte-trip-explorer-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "monte-trip-explorer",
-      storageBucket: "monte-trip-explorer.appspot.com",
-      messagingSenderId: "276849748308",
-      appId: "1:276849748308:web:104aea5ee9e0bacbdec0c1",
-      measurementId: "G-3Z0HS0SZJP"
+    apiKey: "AIzaSyB_R7X8LmunLg0gQCi43QtX1zRpivj0Eyc",
+    authDomain: "monte-trip-explorer.firebaseapp.com",
+    databaseURL: "https://monte-trip-explorer-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "monte-trip-explorer",
+    storageBucket: "monte-trip-explorer.firebasestorage.app",
+    messagingSenderId: "276849748308",
+    appId: "1:276849748308:web:104aea5ee9e0bacbdec0c1",
+    measurementId: "G-3Z0HS0SZJP"
     };
+
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     console.log("Firebase initialized:", firebase.app().name);
