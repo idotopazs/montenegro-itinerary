@@ -123,7 +123,10 @@ html {
 #removeLocationsBtn,
 #addAccommodationBtn,
 #editAccommodationsBtn,
-#removeAccommodationsBtn {
+#removeAccommodationsBtn,
+#addActivityBtn,
+#editActivitiesBtn,
+#removeActivitiesBtn {
   background-color: var(--primary-color);
   color: white;
   border: none;
@@ -140,29 +143,34 @@ html {
 .edit-button,
 #editOriginBtn,
 #editLocationsBtn,
-#editAccommodationsBtn {
+#editAccommodationsBtn,
+#editActivitiesBtn {
   background-color: var(--secondary-color);
 }
 
 .edit-button:hover,
 #editOriginBtn:hover,
 #editLocationsBtn:hover,
-#editAccommodationsBtn:hover {
+#editAccommodationsBtn:hover,
+#editActivitiesBtn:hover {
   background-color: var(--secondary-hover);
 }
 
 #removeLocationsBtn,
-#removeAccommodationsBtn {
+#removeAccommodationsBtn,
+#removeActivitiesBtn {
   background-color: var(--danger-color);
 }
 
 #removeLocationsBtn:hover,
-#removeAccommodationsBtn:hover {
+#removeAccommodationsBtn:hover,
+#removeActivitiesBtn:hover {
   background-color: var(--danger-hover);
 }
 
 #addLocationBtn:hover,
-#addAccommodationBtn:hover {
+#addAccommodationBtn:hover,
+#addActivityBtn:hover {
   background-color: var(--dark-gray);
 }
 
@@ -327,6 +335,44 @@ html {
 
 .remove-location {
   color: red;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+/* ========================================
+   Activities
+   ======================================== */
+#activities {
+  margin-top: 20px;
+}
+
+#activitiesList {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+#activitiesList li {
+  margin-bottom: 5px;
+}
+
+#activitiesList a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+#activitiesList a:hover {
+  text-decoration: underline;
+}
+
+.remove-activity {
+  color: red;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.edit-activity-name,
+.edit-activity-pin,
+.edit-activity-link {
   cursor: pointer;
   margin-left: 5px;
 }

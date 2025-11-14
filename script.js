@@ -5,6 +5,8 @@ let isEditingLocations = false;
 let isRemovingLocations = false;
 let isRemovingAccommodations = false;
 let isEditingAccommodations = false;
+let isEditingActivities = false;
+let isRemovingActivities = false;
 let editingLocationIndex = null;
 let editMode = true;
 
@@ -211,13 +213,101 @@ function showDay(day) {
 
 function updateActivities() {
   const activitiesDiv = document.getElementById('activities');
+
+  // Ensure activities is an array of objects
+  if (!currentDay.activities) {
+    currentDay.activities = [];
+  }
+
+  // Convert old string-based activities to object-based
+  if (currentDay.activities.length > 0 && typeof currentDay.activities[0] === 'string') {
+    currentDay.activities = currentDay.activities.map(activity => ({
+      name: activity,
+      coords: null,
+      link: ''
+    }));
+    saveToFirebase();
+  }
+
   activitiesDiv.innerHTML = `
-    <h3>Day ${currentDay.day} (${currentDay.date}) Activities:</h3>
-    <ul id="activitiesList">
-      ${currentDay.activities.map(activity => `<li>${activity}</li>`).join('')}
-    </ul>
-    <button class="edit-button" onclick="editActivities()">Edit Activities</button>
+    <h3>Activities</h3>
+    <button id="addActivityBtn" class="add-button">Add Activity</button>
+    <ul id="activitiesList"></ul>
+    <div id="activityButtons">
+      <button id="editActivitiesBtn" class="edit-button">Edit Activities</button>
+      <button id="removeActivitiesBtn" class="remove-button">Remove Activities</button>
+    </div>
   `;
+
+  updateActivitiesList();
+
+  // Add event listeners
+  document.getElementById('addActivityBtn').addEventListener('click', addActivity);
+  document.getElementById('editActivitiesBtn').addEventListener('click', toggleEditActivities);
+  document.getElementById('removeActivitiesBtn').addEventListener('click', toggleRemoveActivities);
+}
+
+function updateActivitiesList() {
+  const activitiesList = document.getElementById('activitiesList');
+  if (!activitiesList) return;
+
+  activitiesList.innerHTML = '';
+
+  if (currentDay.activities && Array.isArray(currentDay.activities)) {
+    currentDay.activities.forEach((activity, index) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+
+      if (activity.link) {
+        a.href = activity.link;
+      } else if (activity.coords) {
+        a.href = `https://www.google.com/maps/dir/?api=1&destination=${activity.coords[0]},${activity.coords[1]}`;
+      } else {
+        a.href = '#';
+        a.onclick = (e) => e.preventDefault();
+      }
+
+      a.target = '_blank';
+      a.textContent = activity.name || 'Unnamed Activity';
+
+      li.appendChild(a);
+
+      if (isRemovingActivities) {
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'remove-activity';
+        removeBtn.textContent = ' ❌';
+        removeBtn.onclick = () => removeActivity(index);
+        li.appendChild(removeBtn);
+      } else if (isEditingActivities) {
+        const editNameIcon = document.createElement('span');
+        editNameIcon.className = 'edit-activity-name';
+        editNameIcon.textContent = ' ✏️';
+        editNameIcon.style.cursor = 'pointer';
+        editNameIcon.onclick = () => editActivityName(index);
+
+        const pinIcon = document.createElement('span');
+        pinIcon.className = 'edit-activity-pin';
+        pinIcon.textContent = ' 📍';
+        pinIcon.style.cursor = 'pointer';
+        pinIcon.onclick = () => updateActivityCoordinates(index);
+
+        const linkIcon = document.createElement('span');
+        linkIcon.className = 'edit-activity-link';
+        linkIcon.textContent = ' 🔗';
+        linkIcon.style.cursor = 'pointer';
+        linkIcon.onclick = (e) => {
+          e.stopPropagation();
+          editActivityLink(index);
+        };
+
+        li.appendChild(editNameIcon);
+        li.appendChild(pinIcon);
+        li.appendChild(linkIcon);
+      }
+
+      activitiesList.appendChild(li);
+    });
+  }
 }
 
 function updateRestaurants() {
@@ -435,6 +525,49 @@ function updateMap() {
       });
     }
 
+    // Add markers for activities
+    if (day.activities && Array.isArray(day.activities)) {
+      day.activities.forEach(activity => {
+        if (activity.coords) {
+          L.marker(activity.coords, {
+            icon: L.divIcon({
+              className: 'custom-div-icon',
+              html: `
+                <div style="
+                  background-color: ${dayColor};
+                  border-radius: 50% 50% 50% 0;
+                  border: 2px solid black;
+                  width: 25px;
+                  height: 25px;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  transform: rotate(-45deg);
+                  position: relative;
+                ">
+                  <div style="
+                    transform: rotate(45deg);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 10px;
+                    height: 10px;
+                  ">
+                    <i class="fa fa-star" style="
+                      font-size: 12px;
+                      color: white;
+                    "></i>
+                  </div>
+                </div>
+              `,
+              iconSize: [25, 25],
+              iconAnchor: [12, 25]
+            })
+          }).addTo(map).bindPopup(activity.name || 'Unnamed Activity');
+        }
+      });
+    }
+
     // Add markers for accommodations
     if (day.accommodation && Array.isArray(day.accommodation)) {
       day.accommodation.forEach(acc => {
@@ -485,6 +618,9 @@ function updateMap() {
     }
     if (day.locations && Array.isArray(day.locations)) {
       waypoints = waypoints.concat(day.locations.filter(loc => loc.coords).map(loc => loc.coords));
+    }
+    if (day.activities && Array.isArray(day.activities)) {
+      waypoints = waypoints.concat(day.activities.filter(act => act.coords).map(act => act.coords));
     }
     if (day.accommodation && Array.isArray(day.accommodation)) {
       waypoints = waypoints.concat(day.accommodation.filter(acc => acc.coords).map(acc => acc.coords));
@@ -654,23 +790,117 @@ function getWeatherIcon(iconCode) {
 // ========================================
 // Edit Functions
 // ========================================
-function editActivities() {
-  const activitiesDiv = document.getElementById('activities');
-  const currentActivities = currentDay.activities.join('\n');
-  activitiesDiv.innerHTML = `
-    <h3>Edit Day ${currentDay.day} (${currentDay.date}) Activities:</h3>
-    <textarea id="editActivitiesArea" class="edit-area">${currentActivities}</textarea>
-    <button class="edit-button" onclick="saveActivities()">Save Activities</button>
-  `;
+function addActivity() {
+  alert('Click on the map to add an activity location (or press ESC to skip)');
+
+  const onMapClick = function(e) {
+    map.off('keydown', onEscPress);
+    const activityName = prompt("Enter activity name:");
+    if (activityName) {
+      if (!currentDay.activities) {
+        currentDay.activities = [];
+      }
+      currentDay.activities.push({
+        name: activityName,
+        coords: [e.latlng.lat, e.latlng.lng],
+        link: ''
+      });
+      updateMap();
+      updateActivitiesList();
+      saveToFirebase();
+    }
+  };
+
+  const onEscPress = function(e) {
+    if (e.originalEvent.key === 'Escape') {
+      map.off('click', onMapClick);
+      map.off('keydown', onEscPress);
+      const activityName = prompt("Enter activity name:");
+      if (activityName) {
+        if (!currentDay.activities) {
+          currentDay.activities = [];
+        }
+        currentDay.activities.push({
+          name: activityName,
+          coords: null,
+          link: ''
+        });
+        updateActivitiesList();
+        saveToFirebase();
+      }
+    }
+  };
+
+  map.once('click', onMapClick);
+  map.on('keydown', onEscPress);
 }
 
-function saveActivities() {
-  const editedActivities = document.getElementById('editActivitiesArea').value
-    .split('\n')
-    .filter(activity => activity.trim() !== '');
-  currentDay.activities = editedActivities;
-  showDay(currentDay);
+function toggleEditActivities() {
+  isEditingActivities = !isEditingActivities;
+  if (isEditingActivities) {
+    isRemovingActivities = false;
+  }
+  document.getElementById('editActivitiesBtn').textContent =
+    isEditingActivities ? 'Done Editing' : 'Edit Activities';
+  if (isRemovingActivities) {
+    document.getElementById('removeActivitiesBtn').textContent = 'Remove Activities';
+  }
+  updateActivitiesList();
+}
+
+function toggleRemoveActivities() {
+  isRemovingActivities = !isRemovingActivities;
+  if (isRemovingActivities) {
+    isEditingActivities = false;
+  }
+  document.getElementById('removeActivitiesBtn').textContent =
+    isRemovingActivities ? 'Done Removing' : 'Remove Activities';
+  if (isEditingActivities) {
+    document.getElementById('editActivitiesBtn').textContent = 'Edit Activities';
+  }
+  updateActivitiesList();
+}
+
+function editActivityName(index) {
+  const activity = currentDay.activities[index];
+  const newName = prompt(`Edit activity name:`, activity.name || '');
+  if (newName !== null && newName.trim() !== '') {
+    activity.name = newName;
+    updateActivitiesList();
+    saveToFirebase();
+  }
+}
+
+function updateActivityCoordinates(index) {
+  alert('Click on the map to set the activity location');
+
+  map.once('click', function(e) {
+    const newLat = e.latlng.lat;
+    const newLng = e.latlng.lng;
+    currentDay.activities[index].coords = [newLat, newLng];
+    clearRouteCache();
+    updateMap();
+    updateActivitiesList();
+    saveToFirebase();
+  });
+}
+
+function removeActivity(index) {
+  currentDay.activities.splice(index, 1);
+  clearRouteCache();
+  updateMap();
+  updateActivitiesList();
   saveToFirebase();
+}
+
+function editActivityLink(index) {
+  const activity = currentDay.activities[index];
+  const newLink = prompt(`Enter new link for ${activity.name || 'this activity'}:`, activity.link || '');
+  if (newLink !== null) {
+    activity.link = newLink;
+    updateActivitiesList();
+    saveToFirebase();
+  }
 }
 
 function editLocationLink(index) {
