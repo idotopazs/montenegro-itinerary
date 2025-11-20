@@ -724,12 +724,10 @@ function toggleEditActivities() {
   isEditingActivities = !isEditingActivities;
   if (isEditingActivities) {
     isRemovingActivities = false;
+    document.getElementById('removeActivitiesBtn').textContent = 'Remove Activities';
   }
   document.getElementById('editActivitiesBtn').textContent =
     isEditingActivities ? 'Done Editing' : 'Edit Activities';
-  if (isRemovingActivities) {
-    document.getElementById('removeActivitiesBtn').textContent = 'Remove Activities';
-  }
   updateActivitiesList();
 }
 
@@ -737,12 +735,10 @@ function toggleRemoveActivities() {
   isRemovingActivities = !isRemovingActivities;
   if (isRemovingActivities) {
     isEditingActivities = false;
+    document.getElementById('editActivitiesBtn').textContent = 'Edit Activities';
   }
   document.getElementById('removeActivitiesBtn').textContent =
     isRemovingActivities ? 'Done Removing' : 'Remove Activities';
-  if (isEditingActivities) {
-    document.getElementById('editActivitiesBtn').textContent = 'Edit Activities';
-  }
   updateActivitiesList();
 }
 
@@ -821,6 +817,50 @@ function editAccommodationLink(index) {
 }
 
 // ========================================
+// Day Management Functions
+// ========================================
+function addDay() {
+  const date = prompt("Enter date for the new day (e.g., 25/9):");
+  if (date) {
+    const newDayNumber = tripData.length + 1;
+    const newDay = {
+      date: date,
+      day: newDayNumber,
+      activities: [],
+      accommodation: [],
+      restaurants: []
+    };
+    tripData.push(newDay);
+    clearRouteCache();
+    createDayButtons();
+    showDay(newDay);
+    saveToFirebase();
+  }
+}
+
+function removeCurrentDay() {
+  if (tripData.length <= 1) {
+    alert("Cannot remove the last day. You need at least one day.");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to remove Day ${currentDay.day} (${currentDay.date})?`)) {
+    const dayIndex = tripData.findIndex(d => d.day === currentDay.day);
+    tripData.splice(dayIndex, 1);
+
+    // Renumber remaining days
+    tripData.forEach((day, index) => {
+      day.day = index + 1;
+    });
+
+    clearRouteCache();
+    createDayButtons();
+    showDay(tripData[0]);
+    saveToFirebase();
+  }
+}
+
+// ========================================
 // Helper Functions
 // ========================================
 function openInGoogleMaps(query) {
@@ -865,6 +905,9 @@ function getDefaultTripData() {
 // ========================================
 // Event Listeners
 // ========================================
+document.getElementById('addDayBtn').addEventListener('click', addDay);
+document.getElementById('removeDayBtn').addEventListener('click', removeCurrentDay);
+
 document.getElementById('addAccommodationBtn').addEventListener('click', function() {
   alert('Click on the map to add an accommodation');
   map.once('click', function(e) {
