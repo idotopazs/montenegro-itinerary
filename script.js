@@ -1,13 +1,10 @@
 // ========================================
 // Global Variables
 // ========================================
-let isEditingLocations = false;
-let isRemovingLocations = false;
 let isRemovingAccommodations = false;
 let isEditingAccommodations = false;
 let isEditingActivities = false;
 let isRemovingActivities = false;
-let editingLocationIndex = null;
 let editMode = true;
 
 let tripData = [];
@@ -122,10 +119,17 @@ function initializeApp() {
     initializeMap();
     showDay(tripData[0]);
 
-    // Fit the map to show all locations
-    const allLocations = tripData.flatMap(day =>
-      [day.location, ...(day.locations || []).map(loc => loc.coords)]
-    ).filter(loc => loc);
+    // Fit the map to show all accommodations and activities
+    const allLocations = tripData.flatMap(day => {
+      const coords = [];
+      if (day.accommodation) {
+        coords.push(...day.accommodation.filter(a => a.coords).map(a => a.coords));
+      }
+      if (day.activities) {
+        coords.push(...day.activities.filter(a => a.coords).map(a => a.coords));
+      }
+      return coords;
+    }).filter(loc => loc);
 
     if (allLocations.length > 0) {
       map.fitBounds(L.latLngBounds(allLocations));
@@ -206,8 +210,15 @@ function showDay(day) {
   updateMap();
   updateActivities();
   updateRestaurants();
-  updateWeather(day.date, day.location[0], day.location[1]);
-  updateLocationsList();
+
+  // Use accommodation as origin for weather, fallback to location
+  let originCoords = day.location;
+  if (day.accommodation && day.accommodation.length > 0 && day.accommodation[0].coords) {
+    originCoords = day.accommodation[0].coords;
+  }
+  if (originCoords) {
+    updateWeather(day.date, originCoords[0], originCoords[1]);
+  }
   updateAccommodationList();
 }
 
@@ -226,11 +237,25 @@ function updateActivities() {
       coords: null,
       link: ''
     }));
+  }
+
+  // Migrate old locations to activities (one-time migration)
+  if (currentDay.locations && Array.isArray(currentDay.locations) && currentDay.locations.length > 0) {
+    currentDay.locations.forEach(loc => {
+      if (loc.coords) {
+        currentDay.activities.push({
+          name: loc.name || 'Unnamed Location',
+          coords: loc.coords,
+          link: loc.link || ''
+        });
+      }
+    });
+    delete currentDay.locations;
     saveToFirebase();
   }
 
   activitiesDiv.innerHTML = `
-    <h3>Activities</h3>
+    <h3>Day ${currentDay.day} Activities</h3>
     <button id="addActivityBtn" class="add-button">Add Activity</button>
     <ul id="activitiesList"></ul>
     <div id="activityButtons">
@@ -326,68 +351,6 @@ function updateRestaurants() {
     `).join('');
 }
 
-function updateLocationsList() {
-  const locationsList = document.getElementById('locationsList');
-  locationsList.innerHTML = '';
-
-  if (currentDay.locations && Array.isArray(currentDay.locations)) {
-    currentDay.locations.forEach((loc, index) => {
-      if (loc.coords) {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-
-        if (loc.link) {
-          a.href = loc.link;
-        } else {
-          a.href = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
-        }
-
-        a.target = '_blank';
-        a.textContent = loc.name || 'Unnamed Location';
-
-        const coords = document.createElement('span');
-        coords.className = 'location-coordinates';
-
-        li.appendChild(a);
-        li.appendChild(coords);
-
-        if (isRemovingLocations) {
-          const removeBtn = document.createElement('span');
-          removeBtn.className = 'remove-location';
-          removeBtn.textContent = ' ❌';
-          removeBtn.onclick = () => removeLocation(index);
-          li.appendChild(removeBtn);
-        } else if (isEditingLocations) {
-          const pinIcon = document.createElement('span');
-          pinIcon.className = 'edit-location-pin';
-          pinIcon.textContent = ' 📍';
-          pinIcon.style.cursor = 'pointer';
-          pinIcon.onclick = () => updateLocationCoordinates(index);
-
-          const linkIcon = document.createElement('span');
-          linkIcon.className = 'edit-location-link';
-          linkIcon.textContent = ' 🔗';
-          linkIcon.style.cursor = 'pointer';
-          linkIcon.onclick = (e) => {
-            e.stopPropagation();
-            editLocationLink(index);
-          };
-
-          li.appendChild(pinIcon);
-          li.appendChild(linkIcon);
-        }
-
-        locationsList.appendChild(li);
-      }
-    });
-  }
-
-  if (currentDay.location) {
-    document.getElementById('origin').textContent =
-      `${currentDay.location[0].toFixed(4)}, ${currentDay.location[1].toFixed(4)}`;
-  }
-}
-
 function updateAccommodationList() {
   const list = document.getElementById('accommodationList');
   list.innerHTML = '';
@@ -446,84 +409,6 @@ function updateMap() {
 
   tripData.forEach((day, index) => {
     const dayColor = `hsl(${(day.day * 360) / tripData.length}, 70%, 50%)`;
-
-    // Add marker for the day's origin
-    if (day.location) {
-      L.marker(day.location, {
-        icon: L.divIcon({
-          className: 'custom-div-icon',
-          html: `
-            <div style="
-              background-color: ${dayColor};
-              border-radius: 50% 50% 50% 0;
-              border: 2px solid black;
-              width: 30px;
-              height: 30px;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              transform: rotate(-45deg);
-              position: relative;
-            ">
-              <span style="
-                transform: rotate(45deg);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 20px;
-                height: 20px;
-                font-size: 20px;
-                font-weight: bold;
-                color: white;
-                background-color: rgba(0,0,0,0.5);
-                border: 2px solid black;
-                border-radius: 50%;
-              ">${day.day}</span>
-            </div>
-          `,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(map).bindPopup(`Day ${day.day} Origin`);
-    }
-
-    // Add markers for additional locations
-    if (day.locations && Array.isArray(day.locations)) {
-      day.locations.forEach(loc => {
-        if (loc.coords) {
-          L.marker(loc.coords, {
-            icon: L.divIcon({
-              className: 'custom-div-icon',
-              html: `
-                <div style="
-                  background-color: ${dayColor};
-                  border-radius: 50% 50% 50% 0;
-                  border: 2px solid black;
-                  width: 15px;
-                  height: 15px;
-                  transform: rotate(-45deg);
-                  position: relative;
-                  overflow: hidden;
-                ">
-                  <div style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%) rotate(45deg);
-                    width: 5px;
-                    height: 5px;
-                    background-color: white;
-                    border-radius: 50%;
-                  "></div>
-                </div>
-              `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            })
-          }).addTo(map).bindPopup(loc.name || 'Unnamed Location');
-        }
-      });
-    }
 
     // Add markers for activities
     if (day.activities && Array.isArray(day.activities)) {
@@ -611,22 +496,17 @@ function updateMap() {
       });
     }
 
-    // Create route
+    // Create route - start from accommodation (origin)
     let waypoints = [];
-    if (day.location) {
-      waypoints.push(day.location);
-    }
-    if (day.locations && Array.isArray(day.locations)) {
-      waypoints = waypoints.concat(day.locations.filter(loc => loc.coords).map(loc => loc.coords));
+    if (day.accommodation && Array.isArray(day.accommodation)) {
+      waypoints = waypoints.concat(day.accommodation.filter(acc => acc.coords).map(acc => acc.coords));
     }
     if (day.activities && Array.isArray(day.activities)) {
       waypoints = waypoints.concat(day.activities.filter(act => act.coords).map(act => act.coords));
     }
-    if (day.accommodation && Array.isArray(day.accommodation)) {
-      waypoints = waypoints.concat(day.accommodation.filter(acc => acc.coords).map(acc => acc.coords));
-    }
-    if (index < tripData.length - 1 && tripData[index + 1].location) {
-      waypoints.push(tripData[index + 1].location);
+    // Connect to next day's accommodation
+    if (index < tripData.length - 1 && tripData[index + 1].accommodation && tripData[index + 1].accommodation.length > 0 && tripData[index + 1].accommodation[0].coords) {
+      waypoints.push(tripData[index + 1].accommodation[0].coords);
     }
 
     if (waypoints.length > 1) {
@@ -644,9 +524,14 @@ function updateMap() {
     }
   });
 
-  // Set view to the current day's location with a fixed zoom level
-  if (currentDay.location) {
-    map.setView(currentDay.location, 14);
+  // Set view to the current day's accommodation with a fixed zoom level
+  if (currentDay.accommodation && currentDay.accommodation.length > 0 && currentDay.accommodation[0].coords) {
+    map.setView(currentDay.accommodation[0].coords, 14);
+  } else if (currentDay.activities && currentDay.activities.length > 0) {
+    const firstWithCoords = currentDay.activities.find(a => a.coords);
+    if (firstWithCoords) {
+      map.setView(firstWithCoords.coords, 14);
+    }
   }
 }
 
@@ -903,40 +788,6 @@ function editActivityLink(index) {
   }
 }
 
-function editLocationLink(index) {
-  const location = currentDay.locations[index];
-  const newLink = prompt(`Enter new link for ${location.name || 'this location'}:`, location.link || '');
-  if (newLink !== null) {
-    location.link = newLink;
-    updateLocationsList();
-    saveToFirebase();
-  }
-}
-
-function updateLocationCoordinates(index) {
-  editingLocationIndex = index;
-  alert('Click on the map to set the new location');
-
-  map.once('click', function(e) {
-    const newLat = e.latlng.lat;
-    const newLng = e.latlng.lng;
-    currentDay.locations[editingLocationIndex].coords = [newLat, newLng];
-    editingLocationIndex = null;
-    clearRouteCache();
-    updateMap();
-    updateLocationsList();
-    saveToFirebase();
-  });
-}
-
-function removeLocation(index) {
-  currentDay.locations.splice(index, 1);
-  clearRouteCache();
-  updateMap();
-  updateLocationsList();
-  saveToFirebase();
-}
-
 function updateAccommodationCoordinates(index) {
   alert('Click on the map to set the new accommodation location');
   map.once('click', function(e) {
@@ -984,11 +835,22 @@ function getDefaultTripData() {
     date: '24/9',
     day: 1,
     activities: [
-      'Landing and drive to the hotel in the city of Kotor',
-      'A ride to the cable car + a mountain slide + a view of Kotor',
-      'Accommodation in Kotor'
+      {
+        name: 'Landing and drive to the hotel in the city of Kotor',
+        coords: [42.4246, 18.7712],
+        link: ''
+      },
+      {
+        name: 'Kotor Cable Car + mountain slide + view of Kotor',
+        coords: [42.4255, 18.7711],
+        link: ''
+      }
     ],
-    location: [42.4246, 18.7712],
+    accommodation: [{
+      name: 'Hotel in Kotor',
+      address: 'Kotor Old Town',
+      coords: [42.4246, 18.7712]
+    }],
     restaurants: [{
       name: 'Galion',
       cuisine: 'Seafood',
@@ -996,65 +858,13 @@ function getDefaultTripData() {
       priceRange: '€€€',
       address: 'Suranj bb, Kotor 85330 Montenegro',
       description: 'Upscale dining with panoramic views of the Bay of Kotor.'
-    }],
-    locations: [
-      {
-        name: 'Kotor Old Town',
-        coords: [42.4246, 18.7712]
-      },
-      {
-        name: 'Kotor Cable Car',
-        coords: [42.4255, 18.7711]
-      }
-    ]
+    }]
   }];
 }
 
 // ========================================
 // Event Listeners
 // ========================================
-document.getElementById('addLocationBtn').addEventListener('click', function() {
-  map.once('click', function(e) {
-    const locationName = prompt("Enter location name:");
-    if (locationName) {
-      if (!currentDay.locations) {
-        currentDay.locations = [];
-      }
-      currentDay.locations.push({
-        name: locationName,
-        coords: [e.latlng.lat, e.latlng.lng]
-      });
-      clearRouteCache();
-      updateMap();
-      updateLocationsList();
-      saveToFirebase();
-    }
-  });
-});
-
-document.getElementById('editOriginBtn').addEventListener('click', function() {
-  map.once('click', function(e) {
-    currentDay.location = [e.latlng.lat, e.latlng.lng];
-    clearRouteCache();
-    updateMap();
-    updateLocationsList();
-    updateWeather(currentDay.date, e.latlng.lat, e.latlng.lng);
-    saveToFirebase();
-  });
-});
-
-document.getElementById('removeLocationsBtn').addEventListener('click', function() {
-  isRemovingLocations = !isRemovingLocations;
-  this.textContent = isRemovingLocations ? 'Done Removing' : 'Remove Locations';
-  updateLocationsList();
-});
-
-document.getElementById('editLocationsBtn').addEventListener('click', function() {
-  isEditingLocations = !isEditingLocations;
-  this.textContent = isEditingLocations ? 'Done Editing' : 'Edit Locations';
-  updateLocationsList();
-});
-
 document.getElementById('addAccommodationBtn').addEventListener('click', function() {
   alert('Click on the map to add an accommodation');
   map.once('click', function(e) {
